@@ -1,15 +1,20 @@
 #!/usr/bin/env node
-// Burn harness: spend subscription usage in a controlled way, sample the usage
-// meter after every batch, and write a raw run file that analyze.mjs turns into
-// the numbers on the site.
+// Burn harness: spend subscription usage in a controlled way, read the usage meter
+// as we go, and write a raw run file that analyze.mjs turns into the numbers on the site.
 //
 //   node burn/burn.mjs --mode output --model sonnet --target-pct 10
 //   node burn/burn.mjs --mode output --until-limit          # full burn
 //   node burn/burn.mjs --mode input  --input-tokens 60000   # input-heavy
 //   node burn/burn.mjs --mode cache  --input-tokens 60000   # same prompt every call
 //
-// Modes hold the token mix constant so a single burn measures one weight.
+// Meter source: every headless call streams a `rate_limit_event` carrying the five-hour
+// and weekly utilization, so each call doubles as a meter read (--meter stream, default).
+// The reading arrives in the response headers, i.e. BEFORE that call's own output is
+// counted, so a call's reading is paired with the cumulative spend of the calls before it.
+// --meter endpoint uses the /api/oauth/usage endpoint instead (needs user:profile scope,
+// which `claude setup-token` tokens lack).
 import { spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,6 +32,7 @@ const cfg = {
   mode: opt('mode', 'output'),                       // output | input | cache
   model: opt('model', 'sonnet'),
   effort: opt('effort', 'low'),
+  meter: opt('meter', 'stream'),                     // stream | endpoint
   targetPct: Number(opt('target-pct', 10)),          // stop once 5h meter rose this much
   untilLimit: flag('until-limit'),                   // ignore target, run until rate-limited
   maxCalls: Number(opt('max-calls', 400)),
@@ -38,6 +44,7 @@ const cfg = {
   dry: flag('dry'),
 };
 if (!['output', 'input', 'cache'].includes(cfg.mode)) throw new Error(`bad --mode ${cfg.mode}`);
+if (!['stream', 'endpoint'].includes(cfg.meter)) throw new Error(`bad --meter ${cfg.meter}`);
 
 // ---------- prompts ----------
 const SYSTEM = 'You are a plain text generator. Output only the requested text, no preamble, no headings, no markdown.';
@@ -49,8 +56,7 @@ const WORDS = ('time person year way day thing man world life hand part child ey
 let seed = 1234567;
 const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 function junkText(approxTokens) {
-  // ~1.35 tokens per short English word; shuffled so it never caches against itself.
-  const n = Math.round(approxTokens / 1.35);
+  const n = Math.round(approxTokens / 1.35); // ~1.35 tokens per short English word
   const out = new Array(n);
   for (let i = 0; i < n; i++) out[i] = WORDS[Math.floor(rnd() * WORDS.length)];
   return out.join(' ');
@@ -64,6 +70,7 @@ function promptFor(i) {
   const body = cfg.mode === 'cache' ? cachePrompt : junkText(cfg.inputTokens);
   return `${body}\n\nReply with exactly the word OK and nothing else.`;
 }
+const PROBE = 'Reply with exactly the word OK and nothing else.';
 
 // ---------- one headless call ----------
 const workdir = fs.mkdtempSync(path.join(os.tmpdir(), 'ctc-burn-'));
@@ -75,9 +82,12 @@ function childEnv() {
   }
   return env;
 }
+// The stream event reports utilization as a 0..1 fraction (the endpoint reports 0..100).
+// Normalize to percent, rounded to kill float noise like 7.000000000000001.
+const pct = (v) => (v == null ? null : Math.round(v * 100 * 1000) / 1000);
 function callClaude(prompt) {
   return new Promise((resolve) => {
-    const args = ['-p', prompt, '--model', cfg.model, '--output-format', 'json', '--tools', '', '--no-session-persistence',
+    const args = ['-p', prompt, '--model', cfg.model, '--output-format', 'stream-json', '--verbose', '--tools', '', '--no-session-persistence',
       '--system-prompt', SYSTEM, '--effort', cfg.effort];
     const t0 = Date.now();
     const child = spawn('claude', args, { cwd: workdir, env: childEnv(), stdio: ['ignore', 'pipe', 'pipe'] });
@@ -85,9 +95,23 @@ function callClaude(prompt) {
     child.stdout.on('data', (d) => (out += d));
     child.stderr.on('data', (d) => (err += d));
     child.on('close', (code) => {
-      let j = null;
-      try { j = JSON.parse(out); } catch {}
-      const u = j?.usage ?? {};
+      let result = null, meter = null;
+      for (const line of out.split('\n')) {
+        if (!line.trim()) continue;
+        let j; try { j = JSON.parse(line); } catch { continue; }
+        if (j.type === 'result') result = j;
+        else if (j.type === 'rate_limit_event' && j.rate_limit_info) {
+          const w = j.rate_limit_info.unifiedWindows ?? {};
+          meter = {
+            at: new Date().toISOString(),
+            five_hour: pct(w.five_hour?.utilization), seven_day: pct(w.seven_day?.utilization),
+            five_hour_resets_at: w.five_hour?.resetsAt ? new Date(w.five_hour.resetsAt * 1000).toISOString() : null,
+            seven_day_resets_at: w.seven_day?.resetsAt ? new Date(w.seven_day.resetsAt * 1000).toISOString() : null,
+            status: j.rate_limit_info.status, raw: j.rate_limit_info,
+          };
+        }
+      }
+      const j = result, u = j?.usage ?? {};
       let cost = 0;
       for (const m of Object.values(j?.modelUsage ?? {})) cost += m.costUSD ?? 0;
       if (!cost) cost = j?.total_cost_usd ?? 0;
@@ -104,71 +128,102 @@ function callClaude(prompt) {
         stop_reason: j?.stop_reason ?? null,
         model: Object.keys(j?.modelUsage ?? {})[0] ?? null,
         result_chars: (j?.result ?? '').length,
+        meter,
         error: (!j || j.is_error) ? ((j?.result ?? err ?? out) + '').slice(0, 400) : null,
       });
     });
   });
 }
-const isLimitError = (c) => c.error && /limit|rate|usage|quota|exceed/i.test(c.error);
+const isLimitError = (c) => (c.error && /limit|rate|usage|quota|exceed/i.test(c.error)) || c.meter?.status === 'rejected';
+
+// Meter read: a probe call (stream) or the endpoint.
+async function readMeter(token) {
+  if (cfg.meter === 'endpoint') {
+    const u = await readUsage(token);
+    return { at: u.at, five_hour: u.five_hour?.utilization ?? null, seven_day: u.seven_day?.utilization ?? null,
+      five_hour_resets_at: u.five_hour?.resets_at ?? null, seven_day_resets_at: u.seven_day?.resets_at ?? null, status: null, raw: u, probe: null };
+  }
+  const c = await callClaude(PROBE);
+  if (!c.meter) throw new Error(`probe call gave no rate_limit_event (exit ${c.exit}): ${c.error ?? ''}`);
+  return { ...c.meter, probe: c };
+}
 
 // ---------- run ----------
 const token = resolveToken();
 const id = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '-' + cfg.mode + (cfg.label ? '-' + cfg.label : '');
 const run = {
-  id, version: 1, started_at: new Date().toISOString(), ended_at: null,
-  mode: cfg.mode, model: cfg.model, effort: cfg.effort, label: cfg.label, note: cfg.note,
+  id, version: 2, started_at: new Date().toISOString(), ended_at: null,
+  mode: cfg.mode, model: cfg.model, effort: cfg.effort, meter: cfg.meter, label: cfg.label, note: cfg.note,
   params: { targetPct: cfg.targetPct, untilLimit: cfg.untilLimit, maxCalls: cfg.maxCalls, words: cfg.words, inputTokens: cfg.inputTokens, concurrency: cfg.concurrency },
   runner: { host: os.hostname(), ci: !!process.env.GITHUB_ACTIONS, claude_version: null },
   pre: null, post: null, samples: [], calls: [], outcome: null, error: null,
 };
-try { run.runner.claude_version = (await import('node:child_process')).execSync('claude --version').toString().trim(); } catch {}
+try { run.runner.claude_version = execSync('claude --version').toString().trim(); } catch {}
 
 const cum = { calls: 0, ok: 0, input: 0, cache_write: 0, cache_read: 0, output: 0, thinking: 0, cost_usd: 0 };
-const snapshot = (u) => ({ at: u.at, calls: cum.calls, ...cum, five_hour: u.five_hour?.utilization ?? null, seven_day: u.seven_day?.utilization ?? null, five_hour_resets_at: u.five_hour?.resets_at ?? null });
+const addCall = (c) => { cum.calls++; if (c.ok) { cum.ok++; for (const k of ['input', 'cache_write', 'cache_read', 'output', 'thinking', 'cost_usd']) cum[k] += c[k]; } run.calls.push(c); };
+// A sample pairs a meter reading with the cumulative spend the reading reflects.
+const sample = (m, spend) => ({ at: m.at, ...spend, five_hour: m.five_hour, seven_day: m.seven_day, five_hour_resets_at: m.five_hour_resets_at, status: m.status ?? null });
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
-
-run.pre = await readUsage(token);
-run.samples.push(snapshot(run.pre));
-log(`pre: 5h=${run.pre.five_hour?.utilization}% 7d=${run.pre.seven_day?.utilization}% mode=${cfg.mode} model=${cfg.model} target=+${cfg.targetPct}% untilLimit=${cfg.untilLimit}`);
-if (run.pre.five_hour?.utilization >= 100) { log('5h window already exhausted; aborting'); process.exit(2); }
-if (cfg.dry) { log('dry run; prompt preview:', promptFor(0).slice(0, 120)); process.exit(0); }
+const toUsage = (m) => ({ at: m.at, five_hour: { utilization: m.five_hour, resets_at: m.five_hour_resets_at }, seven_day: { utilization: m.seven_day, resets_at: m.seven_day_resets_at } });
 
 const rawDir = path.join(ROOT, 'data', 'raw');
 fs.mkdirSync(rawDir, { recursive: true });
 const rawPath = path.join(rawDir, id + '.json');
 const save = () => fs.writeFileSync(rawPath, JSON.stringify(run, null, 1));
 
+if (cfg.dry) { log('dry run; prompt preview:', promptFor(0).slice(0, 120)); process.exit(0); }
+
+// Pre reading. In stream mode the probe is a real (tiny) call, so it is counted in the run.
+const pre = await readMeter(token);
+if (pre.probe) addCall(pre.probe);
+run.pre = toUsage(pre);
+run.samples.push(sample(pre, { ...cum, calls: 0, ok: 0, input: 0, cache_write: 0, cache_read: 0, output: 0, thinking: 0, cost_usd: 0 }));
+log(`pre: 5h=${pre.five_hour}% 7d=${pre.seven_day}% mode=${cfg.mode} model=${cfg.model} meter=${cfg.meter} target=+${cfg.targetPct}% untilLimit=${cfg.untilLimit}`);
+if (pre.five_hour >= 100 || pre.status === 'rejected') { log('5h window already exhausted; aborting'); fs.rmSync(workdir, { recursive: true, force: true }); process.exit(2); }
+
 outer: while (cum.calls < cfg.maxCalls) {
   const batch = Math.min(cfg.concurrency, cfg.maxCalls - cum.calls);
+  const spendBefore = { ...cum };
   const results = await Promise.all(Array.from({ length: batch }, (_, k) => callClaude(promptFor(cum.calls + k))));
+  let latest = null;
   for (const c of results) {
-    cum.calls++;
-    if (c.ok) { cum.ok++; for (const k of ['input', 'cache_write', 'cache_read', 'output', 'thinking', 'cost_usd']) cum[k] += c[k]; }
-    run.calls.push(c);
+    addCall(c);
+    if (c.meter) { run.samples.push(sample(c.meter, spendBefore)); latest = c.meter; }
     if (!c.ok) {
       log(`call failed (exit ${c.exit}): ${c.error}`);
       if (isLimitError(c)) { run.outcome = 'limit_hit'; run.error = c.error; }
       else if (run.calls.filter((x) => !x.ok).length >= 3) { run.outcome = 'error'; run.error = c.error; }
     }
   }
-  let u;
-  try { u = await readUsage(token); } catch (e) { log('usage read failed:', e.message); await new Promise((r) => setTimeout(r, 5000)); try { u = await readUsage(token); } catch { u = null; } }
-  if (u) {
-    run.samples.push(snapshot(u));
-    const d5 = u.five_hour.utilization - run.pre.five_hour.utilization;
-    log(`calls=${cum.calls} out=${cum.output} in=${cum.input} cw=${cum.cache_write} cr=${cum.cache_read} $${cum.cost_usd.toFixed(3)} | 5h=${u.five_hour.utilization}% (+${d5}) 7d=${u.seven_day.utilization}%`);
-    if (Math.abs(Date.parse(u.five_hour.resets_at) - Date.parse(run.pre.five_hour.resets_at)) > 60_000 || d5 < 0) { run.outcome = 'window_reset'; log('5h window reset mid-run; stopping'); }
-    else if (!cfg.untilLimit && d5 >= cfg.targetPct) run.outcome = 'target_reached';
-    else if (u.five_hour.utilization >= 100) run.outcome = 'limit_hit';
+  if (cfg.meter === 'endpoint') { try { latest = await readMeter(token); run.samples.push(sample(latest, { ...cum })); } catch (e) { log('usage read failed:', e.message); } }
+  if (latest) {
+    const d5 = latest.five_hour - pre.five_hour;
+    log(`calls=${cum.calls} out=${cum.output} in=${cum.input} cw=${cum.cache_write} cr=${cum.cache_read} $${cum.cost_usd.toFixed(3)} | 5h=${latest.five_hour}% (+${d5}) 7d=${latest.seven_day}% ${latest.status ?? ''}`);
+    if (latest.five_hour_resets_at && pre.five_hour_resets_at && Math.abs(Date.parse(latest.five_hour_resets_at) - Date.parse(pre.five_hour_resets_at)) > 60_000 || d5 < 0) { run.outcome = 'window_reset'; log('5h window reset mid-run; stopping'); }
+    else if (!run.outcome && !cfg.untilLimit && d5 >= cfg.targetPct) run.outcome = 'target_reached';
+    else if (!run.outcome && latest.five_hour >= 100) run.outcome = 'limit_hit';
   }
   save();
   if (run.outcome) break outer;
 }
 if (!run.outcome) run.outcome = 'max_calls';
-try { run.post = await readUsage(token); } catch (e) { log('post usage read failed, using last sample:', e.message); const s = run.samples.at(-1); run.post = { at: s.at, five_hour: { utilization: s.five_hour, resets_at: s.five_hour_resets_at }, seven_day: { utilization: s.seven_day } }; }
+
+// Post reading: in stream mode this is another tiny probe, so the final meter value includes every burn call.
+try {
+  const post = await readMeter(token);
+  if (post.probe) addCall(post.probe);
+  run.post = toUsage(post);
+  run.samples.push(sample(post, { ...cum }));
+  if (post.status === 'rejected' && run.outcome === 'max_calls') run.outcome = 'limit_hit';
+} catch (e) {
+  log('post meter read failed, using last sample:', e.message);
+  const s = run.samples.at(-1);
+  run.post = { at: s.at, five_hour: { utilization: s.five_hour, resets_at: s.five_hour_resets_at }, seven_day: { utilization: s.seven_day } };
+}
 run.ended_at = new Date().toISOString();
 save();
-log(`done: ${run.outcome}; 5h ${run.pre.five_hour.utilization}% -> ${run.post.five_hour.utilization}%, output=${cum.output} cost=$${cum.cost_usd.toFixed(3)}`);
+log(`done: ${run.outcome}; 5h ${run.pre.five_hour.utilization}% -> ${run.post.five_hour.utilization}%, output=${cum.output} cost=$${cum.cost_usd.toFixed(3)} calls=${cum.calls}`);
 const summary = rebuild(ROOT).find((s) => s.id === id);
-if (summary) log('estimate:', JSON.stringify(summary.estimates, null, 1));
+if (summary) log('estimate:', JSON.stringify(summary.estimates.five_hour));
 fs.rmSync(workdir, { recursive: true, force: true });

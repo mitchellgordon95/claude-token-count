@@ -1,6 +1,120 @@
 {
- "generated_at": "2026-10-26T00:58:35.606Z",
- "runs": 0,
- "headline": null,
- "latest_by_mode": {}
+ "generated_at": "2026-10-26T01:35:30.383Z",
+ "runs": 1,
+ "headline": {
+  "id": "2026-10-26T01-18-51-output-test-1",
+  "started_at": "2026-10-26T01:18:51.355Z",
+  "ended_at": "2026-10-26T01:34:54.577Z",
+  "mode": "output",
+  "model": "sonnet",
+  "effort": "low",
+  "label": "test-1",
+  "note": "first real burn, local",
+  "outcome": "target_reached",
+  "valid": true,
+  "ci": false,
+  "claude_version": "2.1.310 (Claude Code)",
+  "model_reported": "claude-sonnet-5-5",
+  "totals": {
+   "calls": 15,
+   "ok": 15,
+   "input": 30,
+   "cache_write": 13828,
+   "cache_read": 107132,
+   "output": 100733,
+   "thinking": 2869,
+   "cost_usd": 1.0734152,
+   "ms": 963197
+  },
+  "pct_per_million_output": 109.19956717262465,
+  "pct_per_usd": 10.24766558178047,
+  "estimates": {
+   "five_hour": {
+    "pre": 0,
+    "post": 11,
+    "delta": 11,
+    "method": "stepfit",
+    "output_tokens": 948379.5974860117,
+    "usd": 10.051492472246167,
+    "output_tokens_low": 839441.6666666666,
+    "output_tokens_high": 1007330,
+    "stepfit": {
+     "crossings": 11,
+     "output_tokens": 948379.5974860117,
+     "usd": 10.051492472246167,
+     "r2": 0.9963463448173586
+    }
+   },
+   "seven_day": {
+    "pre": 0,
+    "post": 1,
+    "delta": 1,
+    "method": "simple",
+    "output_tokens": 10073300,
+    "usd": 107.34151999999999,
+    "output_tokens_low": 5036650,
+    "output_tokens_high": null,
+    "stepfit": null
+   }
+  }
+ },
+ "latest_by_mode": {
+  "output": {
+   "id": "2026-10-26T01-18-51-output-test-1",
+   "started_at": "2026-10-26T01:18:51.355Z",
+   "ended_at": "2026-10-26T01:34:54.577Z",
+   "mode": "output",
+   "model": "sonnet",
+   "effort": "low",
+   "label": "test-1",
+   "note": "first real burn, local",
+   "outcome": "target_reached",
+   "valid": true,
+   "ci": false,
+   "claude_version": "2.1.310 (Claude Code)",
+   "model_reported": "claude-sonnet-5-5",
+   "totals": {
+    "calls": 15,
+    "ok": 15,
+    "input": 30,
+    "cache_write": 13828,
+    "cache_read": 107132,
+    "output": 100733,
+    "thinking": 2869,
+    "cost_usd": 1.0734152,
+    "ms": 963197
+   },
+   "pct_per_million_output": 109.19956717262465,
+   "pct_per_usd": 10.24766558178047,
+   "estimates": {
+    "five_hour": {
+     "pre": 0,
+     "post": 11,
+     "delta": 11,
+     "method": "stepfit",
+     "output_tokens": 948379.5974860117,
+     "usd": 10.051492472246167,
+     "output_tokens_low": 839441.6666666666,
+     "output_tokens_high": 1007330,
+     "stepfit": {
+      "crossings": 11,
+      "output_tokens": 948379.5974860117,
+      "usd": 10.051492472246167,
+      "r2": 0.9963463448173586
+     }
+    },
+    "seven_day": {
+     "pre": 0,
+     "post": 1,
+     "delta": 1,
+     "method": "simple",
+     "output_tokens": 10073300,
+     "usd": 107.34151999999999,
+     "output_tokens_low": 5036650,
+     "output_tokens_high": null,
+     "stepfit": null
+    }
+   }
+  }
+ }
 }

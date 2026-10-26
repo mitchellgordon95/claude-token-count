@@ -8,7 +8,7 @@ meter that Claude Code's `/usage` shows, and publishes the numbers on a static s
 
 - `burn/burn.mjs` — the harness. Runs headless `claude -p` calls with tools disabled, samples the meter after every batch, writes `data/raw/<run>.json`.
 - `burn/analyze.mjs` — summarizes raw runs into `data/runs.json` and `data/latest.json`.
-- `burn/usage.mjs` — reads the OAuth usage endpoint. `npm run usage` prints the current meter.
+- `burn/usage.mjs` — reads the OAuth usage endpoint (optional; needs an interactive-login token). `npm run usage` prints the current meter.
 - `index.html` — the site. Plain HTML, fetches `data/runs.json`. Works on Vercel or GitHub Pages as-is.
 - `.github/workflows/burn.yml` — scheduled burns in GitHub Actions; commits results back to the repo.
 
@@ -30,6 +30,15 @@ smoke tests but burns your own account.
 
 Useful flags: `--model sonnet|opus|haiku`, `--words 4000` (output per call), `--concurrency 2`,
 `--max-calls 400`, `--label weekly`, `--note "..."`, `--dry`.
+
+## How the meter is read
+
+Every headless call streams a `rate_limit_event` carrying the five-hour and weekly utilization
+(the same numbers `/usage` shows), so each burn call is also a meter read. The reading comes
+from the response headers, i.e. before that call's own output is counted, so the harness pairs
+it with the spend of the calls before it. A tiny probe call ("reply OK") brackets the run at
+each end. `--meter endpoint` uses `/api/oauth/usage` instead, which needs the `user:profile`
+scope that `claude setup-token` tokens don't have.
 
 ## Modes
 
@@ -55,6 +64,11 @@ The meter reports whole percents. A partial run reports three things:
 ## Scheduling
 
 `burn.yml` runs a weekly partial burn (Sunday 10:00 UTC, +10%) and a monthly full burn
-(1st of the month). Add the repo secret `CLAUDE_CODE_OAUTH_TOKEN`. Results are committed to
+(1st of the month). Add the repo secret with the burn account's token:
+
+```sh
+gh secret set CLAUDE_CODE_OAUTH_TOKEN --body 'sk-ant-oat01-...'
+```
+ Results are committed to
 `data/`; the site redeploys from the push (Vercel git integration or GitHub Pages).
 `workflow_dispatch` lets you run any mode by hand from the Actions tab.
