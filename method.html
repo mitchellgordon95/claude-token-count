@@ -60,6 +60,10 @@
   </ul>
   <p>Pinning output to its API list price turns those weights into a "meter-implied price" per token kind, which is the easiest way to see how the subscription's weighting differs from the public price list.</p>
 
+  <h2>What the meter charges per token kind</h2>
+  <p>Solved from the latest run of each mode per model, with output pinned to its API list price so the other weights read as prices. The ±1-point range re-solves the system at every corner of the meter's whole-percent rounding.</p>
+  <div id="weights"><p><i>Loading from <a href="data/summary.json">summary.json</a>…</i></p></div>
+
   <h2>The units on the front page</h2>
   <ul>
     <li><b>Adjusted output tokens.</b> Every token kind converted into output tokens by the meter's own weights, then scaled to a full window: 100 points divided by the meter's points per output token. This is the headline because output tokens are the one kind people can picture, and because it is independent of what mix you happen to run.</li>
@@ -81,5 +85,28 @@
   <h2>Data and code</h2>
   <p>Raw per-call records for every run are in <code>data/raw/</code>, run summaries in <a href="data/runs.json">runs.json</a>, solved weights and window sizes in <a href="data/summary.json">summary.json</a>. The harness, analyzer, and this site are at <a href="https://github.com/mitchellgordon95/claude-token-count">github.com/mitchellgordon95/claude-token-count</a>. Runs are scheduled from GitHub Actions and committed back to the repo, so the history is the git log.</p>
 </main>
+<script>
+const modelName = (id) => (id || '').replace(/^claude-/, '').replace(/-(\d)-(\d)$/, ' $1.$2').replace(/^\w/, (c) => c.toUpperCase());
+fetch('data/summary.json', { cache: 'no-cache' }).then((r) => r.json()).then((S) => {
+  const el = document.getElementById('weights');
+  const models = S.models.filter((m) => S.weights[m]);
+  if (!models.length) { el.innerHTML = '<p>No model has all three modes measured yet.</p>'; return; }
+  let html = '';
+  for (const m of models) {
+    const W = S.weights[m], w = W.points_per_million, p = W.implied_price_per_million, r = W.implied_price_range, l = W.list_price_per_million;
+    html += `<h3>${modelName(m)}</h3><table><thead><tr><th>Token kind</th><th>Meter points per 1M</th><th>Meter-implied price per 1M</th><th>±1-point range</th><th>API list price</th></tr></thead><tbody>
+      <tr><td>output</td><td>${w.output.toFixed(1)}</td><td><b>$${p.output.toFixed(2)}</b></td><td>pinned</td><td>$${l.output.toFixed(2)}</td></tr>
+      <tr><td>input / cache write (1h)</td><td>${w.input_or_cache_write.toFixed(1)}</td><td><b>$${p.input_or_cache_write.toFixed(2)}</b></td><td>$${r.input_or_cache_write[0].toFixed(2)} – $${r.input_or_cache_write[1].toFixed(2)}</td><td>$${l.input.toFixed(2)} input · $${(l.input * 2).toFixed(2)} 1h write</td></tr>
+      <tr><td>cache read</td><td>${w.cache_read.toFixed(3)}</td><td><b>$${p.cache_read.toFixed(3)}</b></td><td>$${r.cache_read[0].toFixed(3)} – $${r.cache_read[1].toFixed(3)}</td><td>$${l.cache_read.toFixed(2)}</td></tr>
+    </tbody></table>
+    <p>A Pro five-hour window on ${modelName(m)}: <b>${Math.round(W.window.output_equiv_tokens).toLocaleString()}</b> adjusted output tokens, about $${W.window.usd_at_list.toFixed(2)} at list.</p>`;
+  }
+  const pairs = Object.entries(S.model_ratios || {});
+  if (pairs.length) html += `<p><b>Across models.</b> ${pairs.filter(([k]) => k.startsWith(models[0] + '/') || k.startsWith(models.find((m) => m.includes('opus')) + '/')).slice(0, 1).map(([k, v]) => { const [a, b] = k.split('/'); return `The meter prices ${modelName(a)} output at <b>${v.meter.toFixed(2)}x</b> ${modelName(b)} output, where the list ratio is ${v.list.toFixed(1)}x.`; }).join(' ')} So the subscription's model weighting is its own, not the public price list.</p>`;
+  if (S.weekly_pooled && S.weekly_pooled.windows_per_week) html += `<p><b>Weekly cap.</b> Pooled across ${S.weekly_pooled.runs} runs on all models, the weekly limit is about <b>${S.weekly_pooled.windows_per_week.toFixed(1)}</b> five-hour windows (range ${S.weekly_pooled.windows_per_week_low.toFixed(1)} to ${S.weekly_pooled.windows_per_week_high ? S.weekly_pooled.windows_per_week_high.toFixed(1) : '∞'}). Each run's spend is converted to five-hour meter points with its model's weights and divided by the weekly points it moved.</p>`;
+  html += `<p><b>Reading the weights.</b> Within each model, input and cache writes cost about a quarter of output, i.e. roughly 1.25x the input rate, which is the 5-minute cache-write price: the 1-hour TTL Claude Code requests carries no premium on the meter. Cache reads cost a few thousandths of output, roughly 0.02x input, about a quarter of the list cache-read rate.</p>`;
+  el.innerHTML = html;
+}).catch(() => { document.getElementById('weights').innerHTML = '<p>Could not load summary.json.</p>'; });
+</script>
 </body>
 </html>

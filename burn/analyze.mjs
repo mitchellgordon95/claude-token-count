@@ -91,9 +91,9 @@ function solve3(A, b) { // Gaussian elimination, 3x3
 const deltaOf = (r) => r.estimates.five_hour.stepfit?.delta_fit ?? r.estimates.five_hour.delta;
 
 /** Per model: meter weights (points per token of each kind) solved from the latest valid run of each mode. */
-export function weightsFor(runs, model) {
-  const latest = {};
-  for (const r of runs) if (r.valid && (r.model_reported ?? r.model) === model) latest[r.mode] = r;
+export function weightsFor(runs, model, latestOverride = null) {
+  const latest = latestOverride ?? {};
+  if (!latestOverride) for (const r of runs) if (r.valid && (r.model_reported ?? r.model) === model) latest[r.mode] = r;
   const modes = ['output', 'input', 'cache'];
   if (!modes.every((m) => latest[m])) return null;
   const A = modes.map((m) => { const t = latest[m].totals; return [t.output, t.input + t.cache_write, t.cache_read]; });
@@ -148,6 +148,34 @@ export function weeklyFor(weightsByModel, model, pooled) {
     usd_at_list: W.list_price_per_million ? win * pooled.windows_per_week * W.list_price_per_million.output / 1e6 : null, runs: pooled.runs, weekly_points_moved: pooled.weekly_points_moved };
 }
 
+/** One row per day per model: the five-hour window measured that day, in output-equivalent tokens.
+ *  A day with all three modes solves its own weights. A day with only an output run derives the output
+ *  weight from that run and carries the other two weights from the nearest solved day. */
+export function dailyFor(runs, model, fallbackWeights) {
+  const rs = runs.filter((r) => r.valid && (r.model_reported ?? r.model) === model);
+  const byDay = {};
+  for (const r of rs) (byDay[r.started_at.slice(0, 10)] ??= {})[r.mode] = r; // latest run of each mode that day
+  const out = [];
+  let carried = null;
+  for (const date of Object.keys(byDay).sort()) {
+    const d = byDay[date];
+    let W = weightsFor(runs, model, d), source = 'three modes measured this day';
+    if (!W && d.output) {
+      const base = carried ?? fallbackWeights; if (!base) continue;
+      const o = d.output, t = o.totals, bw = base.points_per_million;
+      const wOut = (deltaOf(o) - ((t.input + t.cache_write) * bw.input_or_cache_write + t.cache_read * bw.cache_read) / 1e6) / t.output;
+      if (!(wOut > 0)) continue;
+      W = { ...base, points_per_million: { ...bw, output: wOut * 1e6 }, window: { ...base.window, output_equiv_tokens: 100 / wOut, usd_at_list: base.list_price_per_million ? 100 / wOut * base.list_price_per_million.output / 1e6 : null } };
+      source = 'output run this day; input and cache weights carried';
+    }
+    if (!W) continue;
+    if (source.startsWith('three')) carried = W;
+    out.push({ date, model, source, runs: Object.values(d).map((r) => r.id), modes: Object.keys(d).sort(),
+      window: W.window, points_per_million: W.points_per_million, list_price_per_million: W.list_price_per_million });
+  }
+  return out;
+}
+
 export function rebuild(root) {
   const rawDir = path.join(root, 'data', 'raw');
   const runs = fs.existsSync(rawDir)
@@ -163,6 +191,8 @@ export function rebuild(root) {
   const weights = {};
   for (const m of models) { const w = weightsFor(runs, m); if (w) weights[m] = w; }
   const pooled = weeklyPooled(runs, weights);
+  const daily = {};
+  for (const m of Object.keys(weights)) daily[m] = dailyFor(runs, m, weights[m]);
   const weekly = {};
   for (const m of Object.keys(weights)) weekly[m] = weeklyFor(weights, m, pooled);
   // cross-model: how the meter prices one model's output against another's, vs list
@@ -170,7 +200,7 @@ export function rebuild(root) {
   for (const a of ms) for (const b of ms) if (a !== b) model_ratios[`${a}/${b}`] = { meter: weights[a].points_per_million.output / weights[b].points_per_million.output,
     list: weights[a].list_price_per_million && weights[b].list_price_per_million ? weights[a].list_price_per_million.output / weights[b].list_price_per_million.output : null };
   const plans = { pro: { label: 'Pro', multiplier: 1, measured: true }, max5: { label: 'Max 5x', multiplier: 5, measured: false }, max20: { label: 'Max 20x', multiplier: 20, measured: false } };
-  fs.writeFileSync(path.join(root, 'data', 'summary.json'), JSON.stringify({ generated_at: new Date().toISOString(), measured_plan: 'pro', plans, models: Object.keys(weights), weights, weekly, weekly_pooled: pooled, model_ratios,
+  fs.writeFileSync(path.join(root, 'data', 'summary.json'), JSON.stringify({ generated_at: new Date().toISOString(), measured_plan: 'pro', plans, models: Object.keys(weights), weights, weekly, weekly_pooled: pooled, model_ratios, daily,
     runs_by_model: Object.fromEntries(models.map((m) => [m, runs.filter((r) => (r.model_reported ?? r.model) === m).map((r) => r.id)])) }, null, 1));
   return runs;
 }

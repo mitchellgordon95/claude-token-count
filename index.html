@@ -59,24 +59,10 @@
   .badge.measured { background: var(--accent-soft); color: var(--accent); }
   .badge.extrap { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
 
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 12px; margin: 14px 0 0; }
-  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
-  .tile .label { color: var(--ink-2); font-size: 13px; }
-  .tile .value { font-size: 24px; font-weight: 600; margin-top: 2px; letter-spacing: -0.02em; }
-  .tile .meta { color: var(--ink-3); font-size: 12px; margin-top: 2px; }
 
   h2 { font-size: 15px; font-weight: 600; margin: 40px 0 10px; letter-spacing: -0.005em; }
   h2 span { color: var(--ink-3); font-weight: 400; margin-left: 8px; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .chart { position: relative; }
-  .chart svg { width: 100%; height: 230px; display: block; overflow: visible; }
-  .chart .tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; padding: 6px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -125%); display: none; }
-  .axis text { fill: var(--ink-3); font-size: 11px; }
-  .grid line { stroke: var(--line); stroke-dasharray: 2 3; }
-  .series { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-  .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
-  .dot.hollow { fill: var(--surface); stroke: var(--accent); }
-  .band { fill: var(--accent-soft); opacity: .6; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   tr:last-child td { border-bottom: 0; }
@@ -114,24 +100,16 @@
     <div class="unit" id="hero-unit" hidden><span class="lbl">Unit</span><div class="seg" id="seg-unit"></div></div>
   </section>
 
-  <section class="tiles" id="tiles"></section>
-
-  <h2 id="h-chart">Five-hour window over time</h2>
-  <div class="card chart" id="chart"><div class="empty">No runs yet.</div></div>
-
-  <h2>What the meter charges per token kind <span id="h-weights-model"></span></h2>
-  <div class="card" id="weights"><div class="empty">Needs one valid run in each of the three modes for this model.</div></div>
-
-  <h2>Every run</h2>
-  <div class="card wrap" id="history"><div class="empty">No runs yet.</div></div>
+  <h2 id="h-daily">Daily measurements</h2>
+  <div class="card wrap" id="daily"><div class="empty">No runs yet.</div></div>
+  <p class="note">One row per day the burn ran, shown in the plan, window, and unit selected above. Full per-run detail, including every call, is in the <a href="data/runs.json">data</a>.</p>
 
   <footer><span id="footer-left"></span><span><a href="method.html">Method and caveats</a></span></footer>
 </main>
 <script>
 const fmtTok = (n) => n == null ? '—' : n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(Math.round(n));
 const fmtUsd = (n) => n == null ? '—' : '$' + (n >= 1000 ? Math.round(n).toLocaleString() : n >= 100 ? Math.round(n) : n.toFixed(2));
-const fmtDate = (s) => new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-const methodName = { measured: 'full burn', stepfit: 'step fit', simple: 'ratio' };
+const fmtDate = (s) => new Date(s.length === 10 ? s + 'T12:00:00Z' : s).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
 const modelName = (id) => (id || '').replace(/^claude-/, '').replace(/-(\d)-(\d)$/, ' $1.$2').replace(/^\w/, (c) => c.toUpperCase());
 
 const state = { plan: 'pro', window: '5h', unit: 'tokens', model: null };
@@ -150,126 +128,69 @@ async function main() {
     fetch('data/runs.json', { cache: 'no-cache' }).then((r) => r.ok ? r.json() : []).catch(() => []),
   ]);
   document.getElementById('footer-left').textContent = RUNS.length ? `${RUNS.length} run${RUNS.length === 1 ? '' : 's'} · last ${fmtDate(RUNS.at(-1).started_at)} · updated ${fmtDate(S?.generated_at ?? RUNS.at(-1).started_at)}` : '';
-  drawTable(RUNS);
   const models = S ? S.models.filter((m) => S.weights[m]) : [];
-  if (!models.length) { // no full weight set yet: fall back to the plain output-run headline
+  if (!models.length) {
     const latest = [...RUNS].reverse().find((r) => r.valid && r.mode === 'output');
     if (latest) { const e = latest.estimates.five_hour; document.getElementById('hero-value').textContent = fmtTok(e.output_tokens); document.getElementById('hero-sub').textContent = `Raw output tokens from the latest output-mode run (${fmtDate(latest.started_at)}). Weights for other token kinds need input and cache runs too.`; }
     return;
   }
-  if (!models.includes(state.model)) state.model = models[0];
+  const preferred = models.find((m) => m.includes('opus')) ?? models[0];
+  if (!models.includes(state.model)) state.model = preferred;
   document.getElementById('controls').hidden = false;
   document.getElementById('hero-unit').hidden = false;
   seg(document.getElementById('seg-plan'), Object.entries(S.plans).map(([k, p]) => ({ value: k, label: p.label, tag: p.measured ? '' : `×${p.multiplier} est.` })), 'plan', render);
   seg(document.getElementById('seg-window'), [{ value: '5h', label: '5 hours' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }], 'window', render);
   document.getElementById('group-model').hidden = models.length < 2;
-  seg(document.getElementById('seg-model'), models.map((m) => ({ value: m, label: modelName(m) })), 'model', render);
-  seg(document.getElementById('seg-unit'), [{ value: 'tokens', label: 'Adjusted output tokens' }, { value: 'usd', label: 'API credits' }, { value: 'reads', label: 'Cache reads (adjusted)' }], 'unit', render);
+  const ordered = [...models].sort((a, b) => (a === preferred ? -1 : b === preferred ? 1 : 0));
+  seg(document.getElementById('seg-model'), ordered.map((m) => ({ value: m, label: modelName(m) })), 'model', render);
+  seg(document.getElementById('seg-unit'), [{ value: 'tokens', label: 'Adjusted output tokens' }, { value: 'usd', label: 'API credits' }, { value: 'cache', label: 'Cache reads (adjusted)' }], 'unit', render);
   render();
 }
 
+// Convert a five-hour-window measurement (output-equivalent tokens + that day's weights) into the selected plan/window/unit.
+function display(windowTokens, weights, list) {
+  const plan = S.plans[state.plan], wk = S.weekly_pooled;
+  let n = windowTokens, lo = null, hi = null;
+  if (state.window === 'day') n *= 24 / 5;
+  if (state.window === 'week') { if (wk && wk.windows_per_week) { n = windowTokens * wk.windows_per_week; lo = windowTokens * wk.windows_per_week_low; hi = wk.windows_per_week_high ? windowTokens * wk.windows_per_week_high : null; } else n *= 24 * 7 / 5; }
+  const conv = { tokens: (x) => x, usd: (x) => x * list.output / 1e6, cache: (x) => x * (weights.output / weights.cache_read) };
+  const fmt = { tokens: fmtTok, usd: fmtUsd, cache: fmtTok }[state.unit];
+  const c = conv[state.unit];
+  return { text: fmt(c(n * plan.multiplier)), lo: lo ? fmt(c(lo * plan.multiplier)) : null, hi: hi ? fmt(c(hi * plan.multiplier)) : null };
+}
+
 function render() {
-  const W = S.weights[state.model], wk = S.weekly[state.model], plan = S.plans[state.plan];
+  const W = S.weights[state.model], wk = S.weekly_pooled, plan = S.plans[state.plan];
   const w = W.points_per_million, list = W.list_price_per_million;
-  // base quantity: output-equivalent tokens for the chosen window, on Pro
-  let base = W.window.output_equiv_tokens, lo = null, hi = null, windowNote = '';
-  if (state.window === 'day') { base *= 24 / 5; windowNote = 'Day = 4.8 five-hour windows, if every window were used fully. The weekly cap usually binds first.'; }
-  if (state.window === 'week') {
-    if (wk && wk.output_equiv_tokens) { base = wk.output_equiv_tokens; lo = wk.output_equiv_tokens_low; hi = wk.output_equiv_tokens_high; windowNote = `Pooled across ${wk.runs} runs on all models: ${wk.windows_per_week.toFixed(1)} five-hour windows per week. The weekly meter moved ${wk.weekly_points_moved} points in total, so this stays coarse until more runs land.`; }
-    else { base *= 24 * 7 / 5; windowNote = 'No weekly meter movement recorded yet; showing 33.6 five-hour windows, which overstates the real weekly cap.'; }
-  }
-  const mult = plan.multiplier;
-  const conv = { tokens: (n) => n, usd: (n) => n * list.output / 1e6, reads: (n) => n * (w.output / w.cache_read) };
-  const fmt = { tokens: fmtTok, usd: fmtUsd, reads: fmtTok }[state.unit];
-  const unitLabel = { tokens: 'adjusted output tokens', usd: 'of API credits at list price', reads: 'cache-read tokens' }[state.unit];
+  const d = display(W.window.output_equiv_tokens, w, list);
+  const unitLabel = { tokens: 'adjusted output tokens', usd: 'of API credits at list price', cache: 'cache-read tokens' }[state.unit];
   const windowLabel = { '5h': 'per 5-hour window', day: 'per day', week: 'per week' }[state.window];
   document.getElementById('hero-label').textContent = `${plan.label} · ${modelName(state.model)} · ${windowLabel}`;
-  document.getElementById('hero-value').textContent = fmt(conv[state.unit](base * mult));
+  document.getElementById('hero-value').textContent = d.text;
   document.getElementById('hero-unit-name').textContent = unitLabel;
-  const range = lo && hi ? ` Likely range ${fmt(conv[state.unit](lo * mult))} to ${fmt(conv[state.unit](hi * mult))}.` : '';
-  const badge = plan.measured ? `<span class="badge measured">measured</span>` : `<span class="badge extrap">extrapolated ×${mult} from Pro, unmeasured</span>`;
+  const badge = plan.measured ? `<span class="badge measured">measured</span>` : `<span class="badge extrap">extrapolated ×${plan.multiplier} from Pro, unmeasured</span>`;
   const unitExpl = {
     tokens: `Every token kind converted to output tokens by the meter's own weights: one cache read counts as <b>1/${Math.round(w.output / w.cache_read)}</b> of an output token, one input or cache-write token as <b>1/${(w.output / w.input_or_cache_write).toFixed(1)}</b>.`,
-    usd: `Adjusted output tokens priced at ${modelName(state.model)}'s list output rate of $${list.output}/M. What the same usage would cost on the API if it were all output.`,
-    reads: `The same budget spent entirely on cache reads, the cheapest token kind. The meter charges a cache read at about $${W.implied_price_per_million.cache_read.toFixed(3)}/M-equivalent.`,
+    usd: `Adjusted output tokens priced at ${modelName(state.model)}'s list output rate of $${list.output}/M: what the same usage would cost on the API if it were all output.`,
+    cache: `The same budget spent entirely on cache reads, the cheapest token kind, which is most of what a long agent session spends.`,
   }[state.unit];
-  document.getElementById('hero-sub').innerHTML = `${badge} ${unitExpl} ${windowNote}${range} <a href="method.html">How this was measured →</a>`;
-
-  const tiles = [
-    { label: 'API credits per 5-hour window', value: fmtUsd(W.window.usd_at_list * mult), meta: `at ${modelName(state.model)} list output price` },
-    { label: 'Meter cost of a cache read', value: `1/${Math.round(w.output / w.cache_read)}`, meta: `of an output token · list says 1/${Math.round(list.output / list.cache_read)}` },
-    { label: 'Meter cost of input or cache write', value: `1/${(w.output / w.input_or_cache_write).toFixed(1)}`, meta: `of an output token · list says 1/${(list.output / list.input).toFixed(0)} for input` },
-    { label: 'Weekly cap in 5-hour windows', value: wk && wk.windows_per_week ? wk.windows_per_week.toFixed(1) : '—', meta: 'full windows per week before the weekly limit' },
-  ];
-  const others = S.models.filter((m) => m !== state.model && S.model_ratios[`${state.model}/${m}`]);
-  for (const o of others) { const r = S.model_ratios[`${state.model}/${o}`]; tiles.splice(1, 0, { label: `${modelName(state.model)} output vs ${modelName(o)}`, value: `${r.meter.toFixed(2)}x`, meta: `on the meter · list price says ${r.list.toFixed(1)}x` }); }
-  document.getElementById('tiles').innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="meta">${t.meta}</div></div>`).join('');
-
-  drawChart(RUNS.filter((r) => r.valid && r.mode === 'output' && (r.model_reported ?? r.model) === state.model), W, mult);
-  drawWeights(W);
+  const windowNote = { '5h': '', day: ' A day is 4.8 five-hour windows, if every window were used fully; the weekly cap usually binds first.',
+    week: wk && wk.windows_per_week ? ` The weekly cap is about ${wk.windows_per_week.toFixed(1)} five-hour windows, pooled across ${wk.runs} runs; coarse until more runs land.` : ' No weekly meter movement recorded yet; showing 33.6 windows, which overstates the real cap.' }[state.window];
+  const range = d.lo && d.hi ? ` Likely range ${d.lo} to ${d.hi}.` : '';
+  document.getElementById('hero-sub').innerHTML = `${badge} ${unitExpl}${windowNote}${range} <a href="method.html">How this was measured →</a>`;
+  drawDaily();
 }
 
-function drawChart(rs, W, mult) {
-  const el = document.getElementById('chart');
-  document.getElementById('h-chart').innerHTML = `Five-hour window over time <span>${modelName(state.model)} output runs, ${S.plans[state.plan].label}</span>`;
-  if (rs.length < 2) { el.innerHTML = `<div class="empty">The chart appears after two or more output-mode runs on ${modelName(state.model)}.</div>`; return; }
-  const Wd = 900, H = 230, m = { t: 14, r: 16, b: 28, l: 54 };
-  const xs = rs.map((r) => new Date(r.started_at).getTime());
-  const ys = rs.map((r) => r.estimates.five_hour.output_tokens * mult);
-  const his = rs.map((r) => (r.estimates.five_hour.output_tokens_high ?? r.estimates.five_hour.output_tokens) * mult);
-  const los = rs.map((r) => (r.estimates.five_hour.output_tokens_low ?? r.estimates.five_hour.output_tokens) * mult);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs), y1 = Math.max(...his) * 1.1;
-  const X = (v) => m.l + (v - x0) / (x1 - x0 || 1) * (Wd - m.l - m.r);
-  const Y = (v) => m.t + (1 - v / y1) * (H - m.t - m.b);
-  const ticks = 4;
-  let g = `<g class="grid">` + Array.from({ length: ticks + 1 }, (_, i) => { const v = y1 * i / ticks; return `<line x1="${m.l}" x2="${Wd - m.r}" y1="${Y(v)}" y2="${Y(v)}"/>`; }).join('') + `</g>`;
-  g += `<g class="axis">` + Array.from({ length: ticks + 1 }, (_, i) => { const v = y1 * i / ticks; return `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtTok(v)}</text>`; }).join('');
-  g += `<text x="${X(x0)}" y="${H - 6}" text-anchor="start">${fmtDate(x0)}</text><text x="${X(x1)}" y="${H - 6}" text-anchor="end">${fmtDate(x1)}</text></g>`;
-  const band = rs.map((r, i) => `${X(xs[i])},${Y(his[i])}`).join(' ') + ' ' + rs.map((r, i) => `${X(xs[i])},${Y(los[i])}`).reverse().join(' ');
-  g += `<polygon class="band" points="${band}"/>`;
-  g += `<polyline class="series" points="${rs.map((r, i) => `${X(xs[i])},${Y(ys[i])}`).join(' ')}"/>`;
-  g += rs.map((r, i) => `<circle class="dot ${r.estimates.five_hour.method === 'measured' ? '' : 'hollow'}" r="4.5" cx="${X(xs[i])}" cy="${Y(ys[i])}"/>`).join('');
-  el.innerHTML = `<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Raw output tokens per five-hour window, by run date">${g}</svg><div class="tip"></div>`;
-  const tip = el.querySelector('.tip'), svg = el.querySelector('svg');
-  svg.addEventListener('mousemove', (ev) => {
-    const rect = svg.getBoundingClientRect(); const px = (ev.clientX - rect.left) / rect.width * Wd;
-    let best = 0; for (let i = 1; i < rs.length; i++) if (Math.abs(X(xs[i]) - px) < Math.abs(X(xs[best]) - px)) best = i;
-    tip.style.display = 'block'; tip.style.left = (X(xs[best]) / Wd * rect.width) + 'px'; tip.style.top = (Y(ys[best]) / H * rect.height) + 'px';
-    tip.textContent = `${fmtDate(xs[best])}: ${fmtTok(ys[best])} raw output tokens · ${methodName[rs[best].estimates.five_hour.method]}`;
-  });
-  svg.addEventListener('mouseleave', () => (tip.style.display = 'none'));
-}
-
-function drawWeights(W) {
-  document.getElementById('h-weights-model').textContent = modelName(state.model) + ', relative to output';
-  const w = W.points_per_million, p = W.implied_price_per_million, r = W.implied_price_range, l = W.list_price_per_million;
-  const rows = [
-    ['output', w.output, `$${p.output.toFixed(2)}`, 'pinned', `$${l.output.toFixed(2)}`],
-    ['input / cache write (1h)', w.input_or_cache_write, `$${p.input_or_cache_write.toFixed(2)}`, `$${r.input_or_cache_write[0].toFixed(2)} – $${r.input_or_cache_write[1].toFixed(2)}`, `$${l.input.toFixed(2)} input · $${(l.input * 2).toFixed(2)} 1h write`],
-    ['cache read', w.cache_read, `$${p.cache_read.toFixed(3)}`, `$${r.cache_read[0].toFixed(3)} – $${r.cache_read[1].toFixed(3)}`, `$${l.cache_read.toFixed(2)}`],
-  ];
-  document.getElementById('weights').innerHTML = `<div class="wrap"><table><thead><tr><th>Token kind</th><th class="num">Meter points per 1M tokens</th><th class="num">Meter-implied price per 1M</th><th class="num">±1-point range</th><th class="num">API list price</th></tr></thead>
-    <tbody>${rows.map((x) => `<tr><td>${x[0]}</td><td class="num">${x[1].toFixed(x[1] < 1 ? 3 : 1)}</td><td class="num"><b>${x[2]}</b></td><td class="num">${x[3]}</td><td class="num">${x[4]}</td></tr>`).join('')}</tbody></table></div>
-    <p class="note">Solved from the latest run of each mode (output-heavy, input-heavy, cache-heavy) on ${modelName(state.model)}, with output pinned to its list price. Three very different token mixes fit one linear model, so the meter behaves like a cost budget. The weights are Anthropic's own: cache writes get no 1-hour premium and cache reads cost a fraction of list.</p>`;
-}
-
-function drawTable(runs) {
-  if (!runs.length) return;
-  const rows = [...runs].reverse().map((r) => {
-    const e = r.estimates.five_hour || {};
-    const pill = !r.valid ? `<span class="pill invalid">${r.outcome}</span>` : `<span class="pill ${e.method}">${methodName[e.method] || e.method}</span>`;
-    return `<tr>
-      <td>${fmtDate(r.started_at)}</td><td>${r.mode}</td><td>${modelName(r.model_reported || r.model)}</td><td>${pill}</td>
-      <td class="num">${fmtTok(r.totals.output)}</td><td class="num" title="${fmtTok(r.totals.input + r.totals.cache_write)} fresh + cache write, ${fmtTok(r.totals.cache_read)} cache read">${fmtTok(r.totals.input + r.totals.cache_write + r.totals.cache_read)}</td>
-      <td class="num">${fmtUsd(r.totals.cost_usd)}</td><td class="num">+${e.delta ?? '—'}</td>
-      <td class="num"><b>${r.valid && r.mode === 'output' ? fmtTok(e.output_tokens) : '—'}</b></td>
-      <td class="num">${r.pct_per_usd ? r.pct_per_usd.toFixed(2) : '—'}</td>
-      <td class="muted lbl" title="${(r.note || '').replace(/"/g, '&quot;')}">${r.label || ''}${r.note ? ' · ' + r.note : ''}</td></tr>`;
-  }).join('');
-  document.getElementById('history').innerHTML = `<table><thead><tr>
-    <th>Date</th><th>Mode</th><th>Model</th><th>Method</th><th class="num">Output</th><th class="num" title="fresh input + cache write + cache read; hover a cell for the split">Input</th>
-    <th class="num">API $</th><th class="num">5h meter</th><th class="num">Raw output / 5h</th><th class="num">% per $</th><th>Label</th>
-  </tr></thead><tbody>${rows}</tbody></table>`;
+function drawDaily() {
+  const rows = (S.daily[state.model] || []).slice().reverse();
+  const el = document.getElementById('daily');
+  document.getElementById('h-daily').innerHTML = `Daily measurements <span>${modelName(state.model)} · ${S.plans[state.plan].label} · ${{ '5h': '5-hour window', day: 'day', week: 'week' }[state.window]}</span>`;
+  if (!rows.length) { el.innerHTML = `<div class="empty">No measurements for ${modelName(state.model)} yet.</div>`; return; }
+  const unitHead = { tokens: 'Adjusted output tokens', usd: 'API credits', cache: 'Cache reads' }[state.unit];
+  el.innerHTML = `<table><thead><tr><th>Date</th><th class="num">${unitHead}</th><th>Basis</th><th class="num">Runs</th></tr></thead><tbody>${rows.map((r) => {
+    const d = display(r.window.output_equiv_tokens, r.points_per_million, r.list_price_per_million);
+    return `<tr><td>${fmtDate(r.date)}</td><td class="num"><b>${d.text}</b></td><td class="muted">${r.source}</td><td class="num">${r.runs.length}</td></tr>`;
+  }).join('')}</tbody></table>`;
 }
 main();
 </script>
