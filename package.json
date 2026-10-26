@@ -1,0 +1,11 @@
+{
+  "name": "claude-token-count",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "usage": "node burn/usage.mjs",
+    "burn": "node burn/burn.mjs",
+    "rebuild": "node burn/analyze.mjs",
+    "serve": "python3 -m http.server 8787"
+  }
+}

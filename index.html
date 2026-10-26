@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Subscription Token Count</title>
+<meta name="description" content="How many output tokens does a Claude Pro subscription actually buy per 5-hour window? Measured by burning a real account on a schedule.">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fcfcfb; --surface: #ffffff; --line: #e6e5e1;
+    --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8985;
+    --accent: #2a78d6; --accent-soft: #d6e5f7;
+    --good: #008300; --warn: #c98500; --bad: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141413; --surface: #1a1a19; --line: #2c2c2a;
+      --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8a8985;
+      --accent: #3987e5; --accent-soft: #1f3a5c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141413; --surface: #1a1a19; --line: #2c2c2a;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8a8985;
+    --accent: #3987e5; --accent-soft: #1f3a5c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 16px 64px; }
+  header h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--ink-2); max-width: 60ch; }
+  .hero { margin: 36px 0 8px; display: grid; gap: 4px; }
+  .hero .label { color: var(--ink-2); font-size: 14px; }
+  .hero .value { font-size: clamp(48px, 9vw, 84px); font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+  .hero .sub { color: var(--ink-2); }
+  .hero .sub b { color: var(--ink); font-weight: 600; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 24px 0 36px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tile .label { color: var(--ink-2); font-size: 13px; }
+  .tile .value { font-size: 26px; font-weight: 600; margin-top: 2px; letter-spacing: -0.02em; }
+  .tile .meta { color: var(--ink-3); font-size: 12px; margin-top: 2px; }
+  h2 { font-size: 16px; font-weight: 600; margin: 36px 0 10px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .chart { position: relative; }
+  .chart svg { width: 100%; height: 220px; display: block; overflow: visible; }
+  .chart .tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; padding: 6px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -120%); display: none; }
+  .axis text { fill: var(--ink-3); font-size: 11px; }
+  .grid line { stroke: var(--line); stroke-dasharray: 2 3; }
+  .series { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+  .dot.hollow { fill: var(--surface); stroke: var(--accent); }
+  .band { fill: var(--accent-soft); opacity: .6; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--ink-2); font-weight: 500; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .wrap { overflow-x: auto; }
+  .pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink-2); }
+  .pill.measured { border-color: var(--good); color: var(--good); }
+  .pill.invalid { border-color: var(--bad); color: var(--bad); }
+  .muted { color: var(--ink-3); }
+  .prose { max-width: 68ch; color: var(--ink-2); }
+  .prose p { margin: 0 0 12px; }
+  .prose code { font-size: 13px; background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; }
+  .empty { color: var(--ink-2); padding: 24px; text-align: center; }
+  footer { margin-top: 48px; color: var(--ink-3); font-size: 13px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Claude Subscription Token Count</h1>
+    <p>How many output tokens does the cheapest Claude Pro plan actually buy per 5-hour window? We burn a real account on a schedule and read the usage meter. Updated automatically.</p>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="label">Output tokens per 5-hour window, Claude Pro</div>
+    <div class="value" id="hero-value">—</div>
+    <div class="sub" id="hero-sub">No runs yet.</div>
+  </section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <h2>Window estimate over time</h2>
+  <div class="card chart" id="chart"><div class="empty">No runs yet.</div></div>
+
+  <h2>Every run</h2>
+  <div class="card wrap" id="history"><div class="empty">No runs yet.</div></div>
+
+  <h2>Method</h2>
+  <div class="card prose">
+    <p>A fresh Claude Pro account is driven through headless Claude Code with tools disabled and a one-line system prompt. Each run holds the token mix constant: <b>output</b> runs ask for long essays from tiny prompts, <b>input</b> runs send huge uncached prompts and ask for one word, <b>cache</b> runs resend the same huge prompt so it hits the prompt cache.</p>
+    <p>After every call we read the same usage endpoint Claude Code's <code>/usage</code> uses, which reports whole-percent utilization of the 5-hour and weekly limits. A <b>partial</b> run stops after the meter rises a set amount and extrapolates to 100%. Because the meter is integer-valued, we also fit a line through every tick-up (the step fit), which is more precise than a single ratio. A <b>full</b> run keeps going until the account is rate-limited, so the window total is measured outright.</p>
+    <p>Every call also reports its API-list-price cost. If the plan is a cost-weighted budget, percent-per-dollar should be the same across output, input, and cache runs; that number is shown in the table so the hypothesis is checkable.</p>
+    <p>Data lives as JSON in the repo: <a href="data/runs.json">runs.json</a>, <a href="data/latest.json">latest.json</a>, raw per-call samples under <code>data/raw/</code>.</p>
+  </div>
+
+  <footer id="footer"></footer>
+</main>
+<script>
+const fmtTok = (n) => n == null ? '—' : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 2) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(Math.round(n));
+const fmtUsd = (n) => n == null ? '—' : '$' + (n >= 100 ? Math.round(n) : n.toFixed(2));
+const fmtDate = (s) => new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+const methodName = { measured: 'full burn', stepfit: 'step fit', simple: 'ratio' };
+
+async function main() {
+  const runs = await fetch('data/runs.json', { cache: 'no-cache' }).then((r) => r.ok ? r.json() : []).catch(() => []);
+  const valid = runs.filter((r) => r.valid);
+  const outputRuns = valid.filter((r) => r.mode === 'output');
+  const latest = outputRuns.at(-1);
+  document.getElementById('footer').textContent = runs.length ? `${runs.length} run${runs.length === 1 ? '' : 's'} recorded. Last run ${fmtDate(runs.at(-1).started_at)}.` : '';
+  if (!latest) return;
+
+  const e = latest.estimates.five_hour;
+  document.getElementById('hero-value').textContent = fmtTok(e.output_tokens);
+  const range = e.output_tokens_low && e.output_tokens_high ? ` (likely ${fmtTok(e.output_tokens_low)}–${fmtTok(e.output_tokens_high)})` : '';
+  document.getElementById('hero-sub').innerHTML =
+    `≈ <b>${fmtUsd(e.usd)}</b> of API-list usage per window · ${latest.model_reported || latest.model} · ${methodName[e.method] || e.method}${range} · measured ${fmtDate(latest.started_at)}`;
+
+  const w = latest.estimates.seven_day;
+  const tiles = [
+    { label: 'Weekly output tokens', value: fmtTok(w?.output_tokens), meta: w?.delta > 0 ? `weekly meter moved ${w.delta}%` : 'weekly meter did not move' },
+    { label: 'Percent per 1M output tokens', value: latest.pct_per_million_output ? latest.pct_per_million_output.toFixed(1) + '%' : '—', meta: 'of the 5-hour window' },
+    { label: 'Percent per API dollar', value: latest.pct_per_usd ? latest.pct_per_usd.toFixed(2) + '%' : '—', meta: 'constant across modes ⇒ cost-weighted' },
+    { label: 'Spent in this run', value: fmtTok(latest.totals.output), meta: `${latest.totals.ok} calls · meter +${e.delta}%` },
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="meta">${t.meta}</div></div>`).join('');
+
+  drawChart(outputRuns);
+  drawTable(runs);
+}
+
+function drawChart(rs) {
+  const el = document.getElementById('chart');
+  if (rs.length < 2) { el.innerHTML = `<div class="empty">Chart appears after two or more output runs.</div>`; return; }
+  const W = 900, H = 220, m = { t: 12, r: 16, b: 28, l: 52 };
+  const xs = rs.map((r) => new Date(r.started_at).getTime());
+  const ys = rs.map((r) => r.estimates.five_hour.output_tokens);
+  const his = rs.map((r) => r.estimates.five_hour.output_tokens_high ?? r.estimates.five_hour.output_tokens);
+  const los = rs.map((r) => r.estimates.five_hour.output_tokens_low ?? r.estimates.five_hour.output_tokens);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y1 = Math.max(...his) * 1.1;
+  const X = (v) => m.l + (v - x0) / (x1 - x0 || 1) * (W - m.l - m.r);
+  const Y = (v) => m.t + (1 - v / y1) * (H - m.t - m.b);
+  const ticks = 4;
+  let g = `<g class="grid">` + Array.from({ length: ticks + 1 }, (_, i) => { const v = y1 * i / ticks; return `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/>`; }).join('') + `</g>`;
+  g += `<g class="axis">` + Array.from({ length: ticks + 1 }, (_, i) => { const v = y1 * i / ticks; return `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtTok(v)}</text>`; }).join('');
+  g += `<text x="${X(x0)}" y="${H - 6}" text-anchor="start">${fmtDate(x0)}</text><text x="${X(x1)}" y="${H - 6}" text-anchor="end">${fmtDate(x1)}</text></g>`;
+  const band = rs.map((r, i) => `${X(xs[i])},${Y(his[i])}`).join(' ') + ' ' + rs.map((r, i) => `${X(xs[i])},${Y(los[i])}`).reverse().join(' ');
+  g += `<polygon class="band" points="${band}"/>`;
+  g += `<polyline class="series" points="${rs.map((r, i) => `${X(xs[i])},${Y(ys[i])}`).join(' ')}"/>`;
+  g += rs.map((r, i) => `<circle class="dot ${r.estimates.five_hour.method === 'measured' ? '' : 'hollow'}" r="4.5" cx="${X(xs[i])}" cy="${Y(ys[i])}" data-i="${i}"/>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Estimated output tokens per 5-hour window, by run date">${g}</svg><div class="tip"></div>`;
+  const tip = el.querySelector('.tip'), svg = el.querySelector('svg');
+  svg.addEventListener('mousemove', (ev) => {
+    const rect = svg.getBoundingClientRect(); const px = (ev.clientX - rect.left) / rect.width * W;
+    let best = 0; for (let i = 1; i < rs.length; i++) if (Math.abs(X(xs[i]) - px) < Math.abs(X(xs[best]) - px)) best = i;
+    tip.style.display = 'block'; tip.style.left = (X(xs[best]) / W * rect.width) + 'px'; tip.style.top = (Y(ys[best]) / H * rect.height) + 'px';
+    tip.textContent = `${fmtDate(xs[best])}: ${fmtTok(ys[best])} tokens · ${fmtUsd(rs[best].estimates.five_hour.usd)} · ${methodName[rs[best].estimates.five_hour.method]}`;
+  });
+  svg.addEventListener('mouseleave', () => (tip.style.display = 'none'));
+}
+
+function drawTable(runs) {
+  const rows = [...runs].reverse().map((r) => {
+    const e = r.estimates.five_hour || {};
+    const pill = !r.valid ? `<span class="pill invalid">${r.outcome}</span>` : `<span class="pill ${e.method}">${methodName[e.method] || e.method}</span>`;
+    return `<tr>
+      <td>${fmtDate(r.started_at)}</td><td>${r.mode}</td><td>${r.model_reported || r.model}</td><td>${pill}</td>
+      <td class="num">${fmtTok(r.totals.output)}</td><td class="num">${fmtTok(r.totals.input + r.totals.cache_write)}</td><td class="num">${fmtTok(r.totals.cache_read)}</td>
+      <td class="num">${fmtUsd(r.totals.cost_usd)}</td><td class="num">+${e.delta ?? '—'}%</td>
+      <td class="num"><b>${r.valid ? fmtTok(e.output_tokens) : '—'}</b></td><td class="num">${r.valid ? fmtUsd(e.usd) : '—'}</td>
+      <td class="num">${r.pct_per_usd ? r.pct_per_usd.toFixed(2) : '—'}</td>
+      <td class="muted">${r.label || ''}${r.note ? ' · ' + r.note : ''}</td></tr>`;
+  }).join('');
+  document.getElementById('history').innerHTML = `<table><thead><tr>
+    <th>Date</th><th>Mode</th><th>Model</th><th>Method</th><th class="num">Output</th><th class="num">Input+cache write</th><th class="num">Cache read</th>
+    <th class="num">API $</th><th class="num">5h meter</th><th class="num">Est. tokens / 5h</th><th class="num">Est. $ / 5h</th><th class="num">% per $</th><th>Label</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+main();
+</script>
+</body>
+</html>
