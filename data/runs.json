@@ -55,5 +55,119 @@
     "stepfit": null
    }
   }
+ },
+ {
+  "id": "2026-10-26T03-14-28-input-test-2",
+  "started_at": "2026-10-26T03:14:28.513Z",
+  "ended_at": "2026-10-26T03:15:09.779Z",
+  "mode": "input",
+  "model": "sonnet",
+  "effort": "low",
+  "label": "test-2",
+  "note": "input-heavy: ~60K uncached tokens per call, one-word reply",
+  "outcome": "target_reached",
+  "valid": true,
+  "ci": false,
+  "claude_version": "2.1.310 (Claude Code)",
+  "model_reported": "claude-sonnet-5-5",
+  "totals": {
+   "calls": 9,
+   "ok": 9,
+   "input": 18,
+   "cache_write": 531530,
+   "cache_read": 65074,
+   "output": 36,
+   "thinking": 0,
+   "cost_usd": 2.1330234,
+   "ms": 41244
+  },
+  "pct_per_million_output": 361111.1111111111,
+  "pct_per_usd": 6.094635436254474,
+  "estimates": {
+   "five_hour": {
+    "pre": 24,
+    "post": 37,
+    "delta": 13,
+    "method": "stepfit",
+    "output_tokens": 236.85636856368566,
+    "usd": 17.072114045986364,
+    "output_tokens_low": 257.14285714285717,
+    "output_tokens_high": 300,
+    "stepfit": {
+     "crossings": 7,
+     "output_tokens": 236.85636856368566,
+     "usd": 17.072114045986364,
+     "r2": 0.9922969289743325
+    }
+   },
+   "seven_day": {
+    "pre": 2,
+    "post": 3,
+    "delta": 1,
+    "method": "simple",
+    "output_tokens": 3600,
+    "usd": 213.30234,
+    "output_tokens_low": 1800,
+    "output_tokens_high": null,
+    "stepfit": null
+   }
+  }
+ },
+ {
+  "id": "2026-10-26T03-15-09-cache-test-3",
+  "started_at": "2026-10-26T03:15:09.823Z",
+  "ended_at": "2026-10-26T03:21:21.384Z",
+  "mode": "cache",
+  "model": "sonnet",
+  "effort": "low",
+  "label": "test-3",
+  "note": "cache-heavy: same ~60K prompt every call",
+  "outcome": "target_reached",
+  "valid": true,
+  "ci": false,
+  "claude_version": "2.1.310 (Claude Code)",
+  "model_reported": "claude-sonnet-5-5",
+  "totals": {
+   "calls": 135,
+   "ok": 135,
+   "input": 270,
+   "cache_write": 73056,
+   "cache_read": 10525306,
+   "output": 540,
+   "thinking": 0,
+   "cost_usd": 1.3506945999999984,
+   "ms": 371402
+  },
+  "pct_per_million_output": 14814.814814814814,
+  "pct_per_usd": 5.922878495257188,
+  "estimates": {
+   "five_hour": {
+    "pre": 37,
+    "post": 45,
+    "delta": 8,
+    "method": "stepfit",
+    "output_tokens": 9260.17383552485,
+    "usd": 19.830593072755487,
+    "output_tokens_low": 6000,
+    "output_tokens_high": 7714.285714285715,
+    "stepfit": {
+     "crossings": 7,
+     "output_tokens": 9260.17383552485,
+     "usd": 19.830593072755487,
+     "r2": 0.9888737533212677
+    }
+   },
+   "seven_day": {
+    "pre": 3,
+    "post": 4,
+    "delta": 1,
+    "method": "simple",
+    "output_tokens": 54000,
+    "usd": 135.06945999999985,
+    "output_tokens_low": 27000,
+    "output_tokens_high": null,
+    "stepfit": null
+   }
+  }
  }
 ]

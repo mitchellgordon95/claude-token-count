@@ -51,24 +51,24 @@ const SYSTEM = 'You are a plain text generator. Output only the requested text, 
 const TOPICS = ['the history of lighthouses', 'how glaciers move', 'the economics of bread', 'urban beekeeping', 'the design of subway maps',
   'why rivers meander', 'the life of a cargo ship', 'the invention of the pencil', 'how tides work', 'the culture of chess clubs',
   'salt as a commodity', 'the geometry of snowflakes', 'how libraries are organised', 'the sound of cities at night', 'the craft of bookbinding'];
-const WORDS = ('time person year way day thing man world life hand part child eye woman place work week case point government company number group problem fact ' +
-  'river stone glass copper velvet orbit lantern harbor meadow cinder quartz saddle tunnel willow anchor beacon canyon ember fossil garnet').split(' ');
-let seed = 1234567;
-const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-function junkText(approxTokens) {
-  const n = Math.round(approxTokens / 1.35); // ~1.35 tokens per short English word
-  const out = new Array(n);
-  for (let i = 0; i < n; i++) out[i] = WORDS[Math.floor(rnd() * WORDS.length)];
-  return out.join(' ');
+// Filler for input/cache modes: coherent English (man pages, see burn/corpus.txt). Random word
+// salad at this size trips the model's safeguard classifier, so the prompt has to read as real text.
+const CORPUS = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'corpus.txt'), 'utf8');
+const CHARS_PER_TOKEN = 3.8;
+function corpusSlice(i, approxTokens) {
+  const n = Math.min(Math.round(approxTokens * CHARS_PER_TOKEN), CORPUS.length - 1);
+  const stride = Math.round(n * 0.37); // overlapping windows: every call sees a different prefix, nothing is ever a cache hit
+  const off = (i * stride) % (CORPUS.length - n);
+  return CORPUS.slice(off, off + n);
 }
-const cachePrompt = cfg.mode === 'cache' ? junkText(cfg.inputTokens) : null;
+const cachePrompt = cfg.mode === 'cache' ? corpusSlice(0, cfg.inputTokens) : null;
 function promptFor(i) {
   if (cfg.mode === 'output') {
     const topic = TOPICS[i % TOPICS.length];
     return `Write a ${cfg.words}-word essay about ${topic}. Continuous prose, no headings, no lists. Do not stop early.`;
   }
-  const body = cfg.mode === 'cache' ? cachePrompt : junkText(cfg.inputTokens);
-  return `${body}\n\nReply with exactly the word OK and nothing else.`;
+  const body = cfg.mode === 'cache' ? cachePrompt : corpusSlice(i, cfg.inputTokens);
+  return `Here is some reference documentation.\n\n${body}\n\nI have no question about it yet. Reply with exactly the word OK and nothing else.`;
 }
 const PROBE = 'Reply with exactly the word OK and nothing else.';
 

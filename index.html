@@ -88,6 +88,10 @@
   <h2>Window estimate over time</h2>
   <div class="card chart" id="chart"><div class="empty">No runs yet.</div></div>
 
+  <h2>Is the meter cost-weighted?</h2>
+  <div class="card" id="modes"><div class="empty">Needs one valid run in each of two or more modes.</div></div>
+  <p class="prose" style="margin:8px 0 0">Each mode spends a different kind of token. If the plan is a dollar budget, the meter should move the same amount per API-list dollar in every mode, even though the per-token numbers differ by orders of magnitude.</p>
+
   <h2>Every run</h2>
   <div class="card wrap" id="history"><div class="empty">No runs yet.</div></div>
 
@@ -131,7 +135,42 @@ async function main() {
   document.getElementById('tiles').innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="meta">${t.meta}</div></div>`).join('');
 
   drawChart(outputRuns);
+  drawModes(valid);
   drawTable(runs);
+}
+
+function drawModes(valid) {
+  const latest = {};
+  for (const r of valid) latest[r.mode] = r;
+  const modes = ['output', 'input', 'cache'].filter((m) => latest[m]);
+  if (modes.length < 2) return;
+  const dom = { output: ['output', (t) => t.output], input: ['cache write (1h)', (t) => t.input + t.cache_write], cache: ['cache read', (t) => t.cache_read] };
+  const rows = modes.map((m) => {
+    const r = latest[m], t = r.totals, e = r.estimates.five_hour, [kind, pick] = dom[m];
+    const domTok = pick(t);
+    return `<tr><td>${m}</td><td>${kind}</td><td class="num">${fmtTok(domTok)}</td><td class="num">${fmtUsd(t.cost_usd)}</td><td class="num">+${e.delta}%</td>
+      <td class="num">${(e.delta / (domTok / 1e6)).toFixed(2)}%</td><td class="num"><b>${r.pct_per_usd.toFixed(2)}%</b></td><td class="num">${fmtUsd(e.usd)}</td><td class="muted">${fmtDate(r.started_at)}</td></tr>`;
+  });
+  const ps = modes.map((m) => latest[m].pct_per_usd), spread = Math.max(...ps) / Math.min(...ps);
+  let weights = '';
+  if (modes.length === 3) {
+    // Three runs, three unknown weights (output, cache write, cache read; plain input is negligible in every mode).
+    const A = modes.map((m) => { const t = latest[m].totals; return [t.output, t.input + t.cache_write, t.cache_read]; });
+    const b = modes.map((m) => latest[m].estimates.five_hour.delta);
+    const solve = (A, b) => { const M = A.map((r, i) => [...r, b[i]]); for (let i = 0; i < 3; i++) { let p = i; for (let r = i + 1; r < 3; r++) if (Math.abs(M[r][i]) > Math.abs(M[p][i])) p = r; [M[i], M[p]] = [M[p], M[i]]; for (let r = 0; r < 3; r++) { if (r === i) continue; const f = M[r][i] / M[i][i]; for (let c = i; c < 4; c++) M[r][c] -= f * M[i][c]; } } return M.map((r, i) => r[3] / r[i]); };
+    const w = solve(A, b);
+    const corners = []; for (const d1 of [-1, 1]) for (const d2 of [-1, 1]) for (const d3 of [-1, 1]) corners.push(solve(A, [b[0] + d1, b[1] + d2, b[2] + d3]));
+    const rel = (i) => 10 * w[i] / w[0], range = (i) => { const v = corners.map((c) => 10 * c[i] / c[0]); return `${fmtUsd(Math.min(...v))}–${fmtUsd(Math.max(...v))}`; };
+    weights = `<table style="margin-top:14px"><thead><tr><th>Token kind</th><th class="num">Meter points per 1M</th><th class="num">Meter-implied price, output pinned to $10/M</th><th class="num">±1-point range</th><th class="num">Sonnet API list</th></tr></thead><tbody>
+      <tr><td>output</td><td class="num">${(w[0] * 1e6).toFixed(1)}</td><td class="num"><b>$10.00</b></td><td class="num">—</td><td class="num">$10.00</td></tr>
+      <tr><td>input / cache write (1h)</td><td class="num">${(w[1] * 1e6).toFixed(1)}</td><td class="num"><b>${fmtUsd(rel(1))}</b></td><td class="num">${range(1)}</td><td class="num">$2.00 input · $4.00 1h write</td></tr>
+      <tr><td>cache read</td><td class="num">${(w[2] * 1e6).toFixed(2)}</td><td class="num"><b>$${rel(2).toFixed(3)}</b></td><td class="num">$${Math.min(...corners.map((c) => 10 * c[2] / c[0])).toFixed(3)}–$${Math.max(...corners.map((c) => 10 * c[2] / c[0])).toFixed(3)}</td><td class="num">$0.20</td></tr>
+    </tbody></table>
+    <p class="muted" style="margin:10px 0 0;font-size:13px">Solved from the latest run of each mode. The meter is linear in tokens with one weight per kind, so it behaves like a cost budget, but cache writes carry no 1-hour premium and cache reads are charged well under list.</p>`;
+  }
+  document.getElementById('modes').innerHTML = `<div class="wrap"><table><thead><tr><th>Mode</th><th>Dominant token kind</th><th class="num">Tokens of it</th><th class="num">API $</th><th class="num">5h meter</th>
+    <th class="num">% per 1M of it</th><th class="num">% per API $</th><th class="num">Implied $ / 5h</th><th>Run</th></tr></thead><tbody>${rows.join('')}</tbody></table>
+    <p class="muted" style="margin:10px 0 0;font-size:13px">Percent per API-list dollar spread across modes: ${spread.toFixed(2)}x, using Claude Code's own list-price cost estimate.</p>${weights}</div>`;
 }
 
 function drawChart(rs) {
