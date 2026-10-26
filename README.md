@@ -72,8 +72,9 @@ The meter reports whole percents. A partial run reports three things:
 
 ## Scheduling
 
-`burn.yml` runs a weekly partial burn (Sunday 10:00 UTC, +10%) and a monthly full burn
-(1st of the month). Add the repo secret with the burn account's token:
+`burn.yml` runs a small Opus output burn twice daily (03:00 and 17:00 UTC, +5%, to compare peak and
+off-peak hours), all three modes on Opus and Sonnet every Sunday at 10:00 UTC, and a full burn to the
+limit on the 1st of the month. Same-day runs of a mode are pooled by the analyzer. Add the repo secret with the burn account's token:
 
 ```sh
 gh secret set CLAUDE_CODE_OAUTH_TOKEN --body 'sk-ant-oat01-...'

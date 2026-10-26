@@ -79,6 +79,7 @@
 
   <h2>Caveats</h2>
   <ul>
+    <li><b>Open question: does the rate change by time of day?</b> The first run from GitHub Actions, at 9:51am US Pacific, moved the meter about 1.6x as far per Opus output token as a run at 8:38pm the night before, with cleaner inputs. One pair of runs is not evidence, so the schedule now burns a small Opus output run twice a day, at 03:00 and 17:00 UTC, to build a peak-versus-off-peak comparison. Same-day runs of a mode are pooled, so the headline reflects the day's average rather than the latest run.</li>
     <li>Three runs and three unknowns is an exact fit; the evidence for linearity is the within-run step fits, not the cross-run solve. More runs per mode will overdetermine the system and give real residuals.</li>
     <li>The weights are per model. Sonnet and Opus are solved separately; other models are not measured.</li>
     <li>Anthropic can change allowances at any time, and says so. Every run is dated, and the history chart exists to catch drift.</li>
@@ -87,7 +88,7 @@
   </ul>
 
   <h2>Data and code</h2>
-  <p>Raw per-call records for every run are in <code>data/raw/</code>, run summaries in <a href="data/runs.json">runs.json</a>, solved weights and window sizes in <a href="data/summary.json">summary.json</a>. The harness, analyzer, and this site are at <a href="https://github.com/mitchellgordon95/claude-token-count">github.com/mitchellgordon95/claude-token-count</a>. Runs are scheduled from GitHub Actions and committed back to the repo, so the history is the git log.</p>
+  <p>Raw per-call records for every run are in <code>data/raw/</code>, run summaries in <a href="data/runs.json">runs.json</a>, solved weights and window sizes in <a href="data/summary.json">summary.json</a>. The harness, analyzer, and this site are at <a href="https://github.com/mitchellgordon95/claude-token-count">github.com/mitchellgordon95/claude-token-count</a>. Runs are scheduled from GitHub Actions and committed back to the repo, so the history is the git log: a small Opus output burn twice daily, all three modes on both models every Sunday, and a full burn to the limit on the first of the month.</p>
 </main>
 <script>
 const modelName = (id) => (id || '').replace(/^claude-/, '').replace(/-(\d)-(\d)$/, ' $1.$2').replace(/^\w/, (c) => c.toUpperCase());

@@ -90,21 +90,38 @@ function solve3(A, b) { // Gaussian elimination, 3x3
 }
 const deltaOf = (r) => r.estimates.five_hour.stepfit?.delta_fit ?? r.estimates.five_hour.delta;
 
+/** Pool several runs of one mode into one pseudo-run: summed totals, summed meter deltas. */
+export function pool(rs) {
+  const totals = { calls: 0, ok: 0, input: 0, cache_write: 0, cache_read: 0, output: 0, thinking: 0, cost_usd: 0, ms: 0 };
+  let delta = 0;
+  for (const r of rs) { for (const k of Object.keys(totals)) totals[k] += r.totals[k] ?? 0; delta += deltaOf(r); }
+  return { id: rs.map((r) => r.id), ids: rs.map((r) => r.id), mode: rs[0].mode, totals, delta, started_at: rs[0].started_at, n: rs.length };
+}
+const dOf = (x) => x.delta ?? deltaOf(x);
+
 /** Per model: meter weights (points per token of each kind) solved from the latest valid run of each mode. */
+/** Weights for a model from a {mode: run-or-pool} set. Without an explicit set: the latest UTC day that has all
+ *  three modes, with every run of a mode that day pooled, so one odd run cannot swing the headline. */
 export function weightsFor(runs, model, latestOverride = null) {
-  const latest = latestOverride ?? {};
-  if (!latestOverride) for (const r of runs) if (r.valid && (r.model_reported ?? r.model) === model) latest[r.mode] = r;
+  let latest = latestOverride;
+  if (!latest) {
+    const byDay = {};
+    for (const r of runs) if (r.valid && (r.model_reported ?? r.model) === model) ((byDay[r.started_at.slice(0, 10)] ??= {})[r.mode] ??= []).push(r);
+    const day = Object.keys(byDay).sort().reverse().find((d) => ['output', 'input', 'cache'].every((m) => byDay[d][m]));
+    if (!day) return null;
+    latest = Object.fromEntries(Object.entries(byDay[day]).map(([m, rs]) => [m, pool(rs)]));
+  }
   const modes = ['output', 'input', 'cache'];
   if (!modes.every((m) => latest[m])) return null;
   const A = modes.map((m) => { const t = latest[m].totals; return [t.output, t.input + t.cache_write, t.cache_read]; });
-  const b = modes.map((m) => deltaOf(latest[m]));
+  const b = modes.map((m) => dOf(latest[m]));
   const w = solve3(A, b);
   const corners = [];
   for (const d1 of [-1, 1]) for (const d2 of [-1, 1]) for (const d3 of [-1, 1]) corners.push(solve3(A, [b[0] + d1, b[1] + d2, b[2] + d3]));
   const list = LIST[model] ?? null;
   const rel = (i) => (list ? list.output * w[i] / w[0] : null);
   return {
-    model, runs: Object.fromEntries(modes.map((m) => [m, latest[m].id])),
+    model, day: latest.output.started_at.slice(0, 10), runs: Object.fromEntries(modes.map((m) => [m, latest[m].ids ?? latest[m].id])),
     points_per_million: { output: w[0] * 1e6, input_or_cache_write: w[1] * 1e6, cache_read: w[2] * 1e6 },
     implied_price_per_million: { output: rel(0), input_or_cache_write: rel(1), cache_read: rel(2) },
     implied_price_range: { input_or_cache_write: [Math.min(...corners.map((c) => list.output * c[1] / c[0])), Math.max(...corners.map((c) => list.output * c[1] / c[0]))],
@@ -154,23 +171,23 @@ export function weeklyFor(weightsByModel, model, pooled) {
 export function dailyFor(runs, model, fallbackWeights) {
   const rs = runs.filter((r) => r.valid && (r.model_reported ?? r.model) === model);
   const byDay = {};
-  for (const r of rs) (byDay[r.started_at.slice(0, 10)] ??= {})[r.mode] = r; // latest run of each mode that day
+  for (const r of rs) ((byDay[r.started_at.slice(0, 10)] ??= {})[r.mode] ??= []).push(r);
   const out = [];
   let carried = null;
   for (const date of Object.keys(byDay).sort()) {
-    const d = byDay[date];
+    const d = Object.fromEntries(Object.entries(byDay[date]).map(([m, list]) => [m, pool(list)])); // every run of a mode that day, pooled
     let W = weightsFor(runs, model, d), source = 'three modes measured this day';
     if (!W && d.output) {
       const base = carried ?? fallbackWeights; if (!base) continue;
       const o = d.output, t = o.totals, bw = base.points_per_million;
-      const wOut = (deltaOf(o) - ((t.input + t.cache_write) * bw.input_or_cache_write + t.cache_read * bw.cache_read) / 1e6) / t.output;
+      const wOut = (dOf(o) - ((t.input + t.cache_write) * bw.input_or_cache_write + t.cache_read * bw.cache_read) / 1e6) / t.output;
       if (!(wOut > 0)) continue;
       W = { ...base, points_per_million: { ...bw, output: wOut * 1e6 }, window: { ...base.window, output_equiv_tokens: 100 / wOut, usd_at_list: base.list_price_per_million ? 100 / wOut * base.list_price_per_million.output / 1e6 : null } };
       source = 'output run this day; input and cache weights carried';
     }
     if (!W) continue;
     if (source.startsWith('three')) carried = W;
-    out.push({ date, model, source, runs: Object.values(d).map((r) => r.id), modes: Object.keys(d).sort(),
+    out.push({ date, model, source, runs: Object.values(d).flatMap((r) => r.ids), modes: Object.keys(d).sort(),
       window: W.window, points_per_million: W.points_per_million, list_price_per_million: W.list_price_per_million });
   }
   return out;

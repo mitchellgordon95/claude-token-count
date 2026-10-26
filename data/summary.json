@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-26T16:55:15.015Z",
+ "generated_at": "2026-10-26T16:57:27.409Z",
  "measured_plan": "pro",
  "plans": {
   "pro": {
@@ -25,10 +25,17 @@
  "weights": {
   "claude-sonnet-5-5": {
    "model": "claude-sonnet-5-5",
+   "day": "2026-10-26",
    "runs": {
-    "output": "2026-10-26T01-18-51-output-test-1",
-    "input": "2026-10-26T03-14-28-input-test-2",
-    "cache": "2026-10-26T03-15-09-cache-test-3"
+    "output": [
+     "2026-10-26T01-18-51-output-test-1"
+    ],
+    "input": [
+     "2026-10-26T03-14-28-input-test-2"
+    ],
+    "cache": [
+     "2026-10-26T03-15-09-cache-test-3"
+    ]
    },
    "points_per_million": {
     "output": 102.28090798520712,
@@ -63,29 +70,37 @@
   },
   "claude-opus-5-5": {
    "model": "claude-opus-5-5",
+   "day": "2026-10-26",
    "runs": {
-    "output": "2026-10-26T16-50-56-output-ci-smoke",
-    "input": "2026-10-26T03-54-11-input-opus-2",
-    "cache": "2026-10-26T03-54-37-cache-opus-3"
+    "output": [
+     "2026-10-26T03-38-04-output-opus-1",
+     "2026-10-26T16-50-56-output-ci-smoke"
+    ],
+    "input": [
+     "2026-10-26T03-54-11-input-opus-2"
+    ],
+    "cache": [
+     "2026-10-26T03-54-37-cache-opus-3"
+    ]
    },
    "points_per_million": {
-    "output": 245.87106931164186,
-    "input_or_cache_write": 35.97106466786854,
-    "cache_read": 0.5292275329645482
+    "output": 174.66895549683832,
+    "input_or_cache_write": 35.97587466264443,
+    "cache_read": 0.5328716032969844
    },
    "implied_price_per_million": {
     "output": 20,
-    "input_or_cache_write": 2.926010349129378,
-    "cache_read": 0.04304919114283849
+    "input_or_cache_write": 4.119320981832474,
+    "cache_read": 0.06101503289823358
    },
    "implied_price_range": {
     "input_or_cache_write": [
-     2.458559256528375,
-     3.498776034419711
+     3.635785557899318,
+     4.65206258433366
     ],
     "cache_read": [
-     0.025529939515004523,
-     0.0644553046164374
+     0.03832038430820462,
+     0.0858430013964762
     ]
    },
    "list_price_per_million": {
@@ -94,47 +109,47 @@
     "cache_read": 0.2
    },
    "window": {
-    "output_equiv_tokens": 406717.2289930943,
-    "usd_at_list": 8.134344579861885,
-    "cache_read_equiv_tokens": 188954643.83690482
+    "output_equiv_tokens": 572511.5817836908,
+    "usd_at_list": 11.450231635673818,
+    "cache_read_equiv_tokens": 187662467.62124267
    }
   }
  },
  "weekly": {
   "claude-sonnet-5-5": {
-   "windows_per_week": 13.432372782953799,
-   "output_equiv_tokens": 13132825.125972211,
-   "output_equiv_tokens_low": 9113950.6470642,
-   "output_equiv_tokens_high": 23491684.148453016,
-   "usd_at_list": 131.32825125972212,
+   "windows_per_week": 11.97613004815202,
+   "output_equiv_tokens": 11709057.22687183,
+   "output_equiv_tokens_low": 8125880.659014728,
+   "output_equiv_tokens_high": 20944882.111149814,
+   "usd_at_list": 117.0905722687183,
    "runs": 7,
    "weekly_points_moved": 6
   },
   "claude-opus-5-5": {
-   "windows_per_week": 13.432372782953799,
-   "output_equiv_tokens": 5463177.437085227,
-   "output_equiv_tokens_low": 3791349.466709925,
-   "output_equiv_tokens_high": 9772401.41157064,
-   "usd_at_list": 109.26354874170454,
+   "windows_per_week": 11.97613004815202,
+   "output_equiv_tokens": 6856473.1575147025,
+   "output_equiv_tokens_low": 4758272.296409901,
+   "output_equiv_tokens_high": 12264695.542936949,
+   "usd_at_list": 137.12946315029407,
    "runs": 7,
    "weekly_points_moved": 6
   }
  },
  "weekly_pooled": {
   "runs": 7,
-  "points_5h_spent": 80.59423669772279,
+  "points_5h_spent": 71.85678028891212,
   "weekly_points_moved": 6,
-  "windows_per_week": 13.432372782953799,
-  "windows_per_week_low": 9.321831475140923,
-  "windows_per_week_high": 24.027507848054718
+  "windows_per_week": 11.97613004815202,
+  "windows_per_week_low": 8.311224519834596,
+  "windows_per_week_high": 21.42261559971525
  },
  "model_ratios": {
   "claude-sonnet-5-5/claude-opus-5-5": {
-   "meter": 0.4159940747464109,
+   "meter": 0.5855700441688306,
    "list": 0.5
   },
   "claude-opus-5-5/claude-sonnet-5-5": {
-   "meter": 2.4038803932714616,
+   "meter": 1.707737630977041,
    "list": 2
   }
  },
@@ -177,6 +192,7 @@
     "model": "claude-opus-5-5",
     "source": "three modes measured this day",
     "runs": [
+     "2026-10-26T03-38-04-output-opus-1",
      "2026-10-26T16-50-56-output-ci-smoke",
      "2026-10-26T03-54-11-input-opus-2",
      "2026-10-26T03-54-37-cache-opus-3"
@@ -187,14 +203,14 @@
      "output"
     ],
     "window": {
-     "output_equiv_tokens": 406717.2289930943,
-     "usd_at_list": 8.134344579861885,
-     "cache_read_equiv_tokens": 188954643.83690482
+     "output_equiv_tokens": 572511.5817836908,
+     "usd_at_list": 11.450231635673818,
+     "cache_read_equiv_tokens": 187662467.62124267
     },
     "points_per_million": {
-     "output": 245.87106931164186,
-     "input_or_cache_write": 35.97106466786854,
-     "cache_read": 0.5292275329645482
+     "output": 174.66895549683832,
+     "input_or_cache_write": 35.97587466264443,
+     "cache_read": 0.5328716032969844
     },
     "list_price_per_million": {
      "output": 20,

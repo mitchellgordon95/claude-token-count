@@ -1,7 +1,9 @@
 name: burn
 on:
   schedule:
-    - cron: '0 10 * * 0'     # weekly partial burn, Sunday 10:00 UTC
+    - cron: '0 3 * * *'      # daily small Opus output burn, 03:00 UTC (evening US Pacific, off-peak)
+    - cron: '0 17 * * *'     # daily small Opus output burn, 17:00 UTC (morning US Pacific, peak)
+    - cron: '0 10 * * 0'     # weekly three-mode set on Opus and Sonnet, Sunday 10:00 UTC
     - cron: '0 10 1 * *'     # monthly full burn, 1st of the month 10:00 UTC
   workflow_dispatch:
     inputs:
@@ -25,9 +27,12 @@ jobs:
         id: p
         run: |
           if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "0 10 1 * *" ]; then
-            echo "args=--mode output --until-limit --label monthly-full" >> $GITHUB_OUTPUT
+            echo "args=--mode output --model opus --until-limit --label monthly-full" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "0 10 * * 0" ]; then
+            echo "weekly=1" >> $GITHUB_OUTPUT
+            echo "args=--mode output --model opus --target-pct 8 --label weekly" >> $GITHUB_OUTPUT
           elif [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "args=--mode output --target-pct 10 --label weekly" >> $GITHUB_OUTPUT
+            echo "args=--mode output --model opus --target-pct 5 --label daily" >> $GITHUB_OUTPUT
           else
             UL=""; [ "${{ inputs.until_limit }}" = "true" ] && UL="--until-limit"
             echo "args=--mode ${{ inputs.mode }} --model ${{ inputs.model }} --target-pct ${{ inputs.target_pct }} $UL --label ${{ inputs.label }}" >> $GITHUB_OUTPUT
@@ -35,7 +40,15 @@ jobs:
       - name: burn
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: node burn/burn.mjs ${{ steps.p.outputs.args }} --concurrency 2
+        run: |
+          node burn/burn.mjs ${{ steps.p.outputs.args }} --concurrency 2
+          if [ "${{ steps.p.outputs.weekly }}" = "1" ]; then
+            node burn/burn.mjs --mode input --model opus --input-tokens 60000 --target-pct 8 --label weekly --concurrency 2
+            node burn/burn.mjs --mode cache --model opus --input-tokens 60000 --target-pct 6 --label weekly --concurrency 2
+            node burn/burn.mjs --mode output --model sonnet --target-pct 8 --label weekly --concurrency 2
+            node burn/burn.mjs --mode input --model sonnet --input-tokens 60000 --target-pct 8 --label weekly --concurrency 2
+            node burn/burn.mjs --mode cache --model sonnet --input-tokens 60000 --target-pct 6 --label weekly --concurrency 2
+          fi
       - name: commit results
         run: |
           git config user.name "burn-bot"
