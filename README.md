@@ -53,13 +53,14 @@ Each mode holds the token mix constant so a run measures one weight:
 Every call also reports its API-list-price cost. If the plan is a cost-weighted budget,
 percent-per-dollar should match across modes. The site shows that column.
 
-## Findings so far (2026-10-25, Pro, Sonnet 5.5)
+## Findings so far (2026-10-25, Pro)
 
-Three burns with different token mixes fit one linear meter. Relative to output at $10/M, the meter charges
-input and 1-hour cache writes at about $2.3/M (list: $2 input, $4 for a 1h write) and cache reads at about
-$0.056/M (list $0.20). So the plan is a cost-weighted budget, but with its own weights: no TTL premium on cache
-writes and cache reads at roughly a quarter of list. A Pro five-hour window is about 950K Sonnet output tokens,
-or about $10 of output-equivalent usage. Requests flagged by the safeguard classifier still charge the meter.
+Three burns per model with different token mixes fit one linear meter per model. Relative to each model's own
+output: input and 1-hour cache writes cost about 0.23–0.26x output (≈1.25x input, the 5-minute write rate, with
+no 1-hour premium), and cache reads about 0.004–0.005x output (≈0.02x input, about a quarter of the list 0.1x).
+Across models the meter prices Opus 5.5 output at about 1.4x Sonnet 5.5 output, where list says 2x. A Pro
+five-hour window is about 980K Sonnet or 720K Opus output-equivalent tokens; the weekly cap is roughly 12 such
+windows (coarse). Requests flagged by the safeguard classifier still charge the meter.
 
 ## Estimation
 

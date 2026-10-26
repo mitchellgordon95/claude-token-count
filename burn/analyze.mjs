@@ -120,18 +120,32 @@ function outputEquiv(r, W) {
   return t.output + (t.input + t.cache_write) * (w.input_or_cache_write / w.output) + t.cache_read * (w.cache_read / w.output);
 }
 
-/** Weekly window, pooled across every valid run: cumulative output-equivalent spend vs the weekly meter. */
-export function weeklyFor(runs, weightsByModel, model) {
-  const W = weightsByModel[model]; if (!W) return null;
-  const rs = runs.filter((r) => r.valid && (r.model_reported ?? r.model) === model && r.estimates.seven_day);
+/** Five-hour meter points a run spent, by its model's weights (model-independent unit: 100 = one full window). */
+function pointsSpent(r, W) {
+  const t = r.totals, w = W.points_per_million;
+  return (t.output * w.output + (t.input + t.cache_write) * w.input_or_cache_write + t.cache_read * w.cache_read) / 1e6;
+}
+
+/** Weekly cap in five-hour windows, pooled across every valid run of every model with solved weights:
+ *  sum of five-hour points spent inside runs / sum of weekly points moved inside runs. Using within-run
+ *  weekly deltas (not first-pre to last-post) keeps spend outside the runs out of the denominator. */
+export function weeklyPooled(runs, weightsByModel) {
+  const rs = runs.filter((r) => r.valid && weightsByModel[r.model_reported ?? r.model] && r.estimates.seven_day && r.estimates.seven_day.delta >= 0);
   if (!rs.length) return null;
-  const first = rs[0].estimates.seven_day.pre, last = rs.at(-1).estimates.seven_day.post;
-  const spent = rs.reduce((s, r) => s + outputEquiv(r, W), 0);
-  const delta = last - first;
-  if (delta <= 0) return { delta, spent_output_equiv: spent, output_equiv_tokens: null };
-  return { delta, spent_output_equiv: spent, output_equiv_tokens: spent * 100 / delta,
-    output_equiv_tokens_low: spent * 100 / (delta + 1), output_equiv_tokens_high: delta > 1 ? spent * 100 / (delta - 1) : null,
-    usd_at_list: W.list_price_per_million ? spent * 100 / delta * W.list_price_per_million.output / 1e6 : null, runs: rs.length };
+  const pts = rs.reduce((s, r) => s + pointsSpent(r, weightsByModel[r.model_reported ?? r.model]), 0);
+  const moved = rs.reduce((s, r) => s + r.estimates.seven_day.delta, 0);
+  if (moved <= 0) return { runs: rs.length, points_5h_spent: pts, weekly_points_moved: moved, windows_per_week: null };
+  const err = Math.sqrt(rs.length); // each run's weekly delta carries +-1 of rounding
+  return { runs: rs.length, points_5h_spent: pts, weekly_points_moved: moved, windows_per_week: pts / moved,
+    windows_per_week_low: pts / (moved + err), windows_per_week_high: moved - err > 0 ? pts / (moved - err) : null };
+}
+
+export function weeklyFor(weightsByModel, model, pooled) {
+  const W = weightsByModel[model]; if (!W || !pooled || !pooled.windows_per_week) return null;
+  const win = W.window.output_equiv_tokens;
+  return { windows_per_week: pooled.windows_per_week, output_equiv_tokens: win * pooled.windows_per_week,
+    output_equiv_tokens_low: win * pooled.windows_per_week_low, output_equiv_tokens_high: pooled.windows_per_week_high ? win * pooled.windows_per_week_high : null,
+    usd_at_list: W.list_price_per_million ? win * pooled.windows_per_week * W.list_price_per_million.output / 1e6 : null, runs: pooled.runs, weekly_points_moved: pooled.weekly_points_moved };
 }
 
 export function rebuild(root) {
@@ -148,10 +162,15 @@ export function rebuild(root) {
   const models = [...new Set(runs.filter((r) => r.valid).map((r) => r.model_reported ?? r.model))];
   const weights = {};
   for (const m of models) { const w = weightsFor(runs, m); if (w) weights[m] = w; }
+  const pooled = weeklyPooled(runs, weights);
   const weekly = {};
-  for (const m of Object.keys(weights)) weekly[m] = weeklyFor(runs, weights, m);
+  for (const m of Object.keys(weights)) weekly[m] = weeklyFor(weights, m, pooled);
+  // cross-model: how the meter prices one model's output against another's, vs list
+  const ms = Object.keys(weights), model_ratios = {};
+  for (const a of ms) for (const b of ms) if (a !== b) model_ratios[`${a}/${b}`] = { meter: weights[a].points_per_million.output / weights[b].points_per_million.output,
+    list: weights[a].list_price_per_million && weights[b].list_price_per_million ? weights[a].list_price_per_million.output / weights[b].list_price_per_million.output : null };
   const plans = { pro: { label: 'Pro', multiplier: 1, measured: true }, max5: { label: 'Max 5x', multiplier: 5, measured: false }, max20: { label: 'Max 20x', multiplier: 20, measured: false } };
-  fs.writeFileSync(path.join(root, 'data', 'summary.json'), JSON.stringify({ generated_at: new Date().toISOString(), measured_plan: 'pro', plans, models: Object.keys(weights), weights, weekly,
+  fs.writeFileSync(path.join(root, 'data', 'summary.json'), JSON.stringify({ generated_at: new Date().toISOString(), measured_plan: 'pro', plans, models: Object.keys(weights), weights, weekly, weekly_pooled: pooled, model_ratios,
     runs_by_model: Object.fromEntries(models.map((m) => [m, runs.filter((r) => (r.model_reported ?? r.model) === m).map((r) => r.id)])) }, null, 1));
   return runs;
 }

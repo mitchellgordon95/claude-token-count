@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-26T03:39:02.854Z",
+ "generated_at": "2026-10-26T04:00:50.428Z",
  "measured_plan": "pro",
  "plans": {
   "pro": {
@@ -19,7 +19,8 @@
   }
  },
  "models": [
-  "claude-sonnet-5-5"
+  "claude-sonnet-5-5",
+  "claude-opus-5-5"
  ],
  "weights": {
   "claude-sonnet-5-5": {
@@ -59,17 +60,82 @@
     "usd_at_list": 9.776995723821985,
     "cache_read_equiv_tokens": 208951995.2430148
    }
+  },
+  "claude-opus-5-5": {
+   "model": "claude-opus-5-5",
+   "runs": {
+    "output": "2026-10-26T03-38-04-output-opus-1",
+    "input": "2026-10-26T03-54-11-input-opus-2",
+    "cache": "2026-10-26T03-54-37-cache-opus-3"
+   },
+   "points_per_million": {
+    "output": 139.6581778479688,
+    "input_or_cache_write": 35.978239784247826,
+    "cache_read": 0.5346634284171993
+   },
+   "implied_price_per_million": {
+    "output": 20,
+    "input_or_cache_write": 5.152328397612857,
+    "cache_read": 0.0765674358144972
+   },
+   "implied_price_range": {
+    "input_or_cache_write": [
+     4.373881806639087,
+     6.087381896757341
+    ],
+    "cache_read": [
+     0.04639276183960444,
+     0.11230165336639586
+    ]
+   },
+   "list_price_per_million": {
+    "output": 20,
+    "input": 4,
+    "cache_read": 0.2
+   },
+   "window": {
+    "output_equiv_tokens": 716033.9733836389,
+    "usd_at_list": 14.320679467672779,
+    "cache_read_equiv_tokens": 187033551.7355972
+   }
   }
  },
  "weekly": {
   "claude-sonnet-5-5": {
-   "delta": 4,
-   "spent_output_equiv": 293158.566298048,
-   "output_equiv_tokens": 7328964.1574512,
-   "output_equiv_tokens_low": 5863171.32596096,
-   "output_equiv_tokens_high": 9771952.209934933,
-   "usd_at_list": 73.289641574512,
-   "runs": 3
+   "windows_per_week": 12.36375559138609,
+   "output_equiv_tokens": 12088038.554736195,
+   "output_equiv_tokens_low": 8113333.243022914,
+   "output_equiv_tokens_high": 23697294.532598652,
+   "usd_at_list": 120.88038554736195,
+   "runs": 6,
+   "weekly_points_moved": 5
+  },
+  "claude-opus-5-5": {
+   "windows_per_week": 12.36375559138609,
+   "output_equiv_tokens": 8852869.042044364,
+   "output_equiv_tokens_low": 5941929.815139844,
+   "output_equiv_tokens_high": 17355093.97971374,
+   "usd_at_list": 177.05738084088728,
+   "runs": 6,
+   "weekly_points_moved": 5
+  }
+ },
+ "weekly_pooled": {
+  "runs": 6,
+  "points_5h_spent": 61.81877795693045,
+  "weekly_points_moved": 5,
+  "windows_per_week": 12.36375559138609,
+  "windows_per_week_low": 8.298390908829488,
+  "windows_per_week_high": 24.237808015870744
+ },
+ "model_ratios": {
+  "claude-sonnet-5-5/claude-opus-5-5": {
+   "meter": 0.7323660494593421,
+   "list": 0.5
+  },
+  "claude-opus-5-5/claude-sonnet-5-5": {
+   "meter": 1.3654374076163613,
+   "list": 2
   }
  },
  "runs_by_model": {
@@ -77,6 +143,11 @@
    "2026-10-26T01-18-51-output-test-1",
    "2026-10-26T03-14-28-input-test-2",
    "2026-10-26T03-15-09-cache-test-3"
+  ],
+  "claude-opus-5-5": [
+   "2026-10-26T03-38-04-output-opus-1",
+   "2026-10-26T03-54-11-input-opus-2",
+   "2026-10-26T03-54-37-cache-opus-3"
   ]
  }
 }

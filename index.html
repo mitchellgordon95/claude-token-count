@@ -175,7 +175,7 @@ function render() {
   let base = W.window.output_equiv_tokens, lo = null, hi = null, windowNote = '';
   if (state.window === 'day') { base *= 24 / 5; windowNote = 'Day = 4.8 five-hour windows, if every window were used fully. The weekly cap usually binds first.'; }
   if (state.window === 'week') {
-    if (wk && wk.output_equiv_tokens) { base = wk.output_equiv_tokens; lo = wk.output_equiv_tokens_low; hi = wk.output_equiv_tokens_high; windowNote = `Weekly meter moved ${wk.delta} point${wk.delta === 1 ? '' : 's'} across ${wk.runs} run${wk.runs === 1 ? '' : 's'}; coarse until more runs accumulate.`; }
+    if (wk && wk.output_equiv_tokens) { base = wk.output_equiv_tokens; lo = wk.output_equiv_tokens_low; hi = wk.output_equiv_tokens_high; windowNote = `Pooled across ${wk.runs} runs on all models: ${wk.windows_per_week.toFixed(1)} five-hour windows per week. The weekly meter moved ${wk.weekly_points_moved} points in total, so this stays coarse until more runs land.`; }
     else { base *= 24 * 7 / 5; windowNote = 'No weekly meter movement recorded yet; showing 33.6 five-hour windows, which overstates the real weekly cap.'; }
   }
   const mult = plan.multiplier;
@@ -199,8 +199,10 @@ function render() {
     { label: 'API credits per 5-hour window', value: fmtUsd(W.window.usd_at_list * mult), meta: `at ${modelName(state.model)} list output price` },
     { label: 'Meter cost of a cache read', value: `1/${Math.round(w.output / w.cache_read)}`, meta: `of an output token · list says 1/${Math.round(list.output / list.cache_read)}` },
     { label: 'Meter cost of input or cache write', value: `1/${(w.output / w.input_or_cache_write).toFixed(1)}`, meta: `of an output token · list says 1/${(list.output / list.input).toFixed(0)} for input` },
-    { label: 'Weekly cap in 5-hour windows', value: wk && wk.output_equiv_tokens ? (wk.output_equiv_tokens / W.window.output_equiv_tokens).toFixed(1) : '—', meta: 'full windows per week before the weekly limit' },
+    { label: 'Weekly cap in 5-hour windows', value: wk && wk.windows_per_week ? wk.windows_per_week.toFixed(1) : '—', meta: 'full windows per week before the weekly limit' },
   ];
+  const others = S.models.filter((m) => m !== state.model && S.model_ratios[`${state.model}/${m}`]);
+  for (const o of others) { const r = S.model_ratios[`${state.model}/${o}`]; tiles.splice(1, 0, { label: `${modelName(state.model)} output vs ${modelName(o)}`, value: `${r.meter.toFixed(2)}x`, meta: `on the meter · list price says ${r.list.toFixed(1)}x` }); }
   document.getElementById('tiles').innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="meta">${t.meta}</div></div>`).join('');
 
   drawChart(RUNS.filter((r) => r.valid && r.mode === 'output' && (r.model_reported ?? r.model) === state.model), W, mult);
