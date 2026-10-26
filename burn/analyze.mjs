@@ -45,7 +45,7 @@ function estimateBucket(run, bucket, tot) {
   if (pts.length >= 3) {
     const f = ols(pts), g = ols(ptsUsd);
     if (f && f.slope > 0) {
-      est.stepfit = { crossings: pts.length, output_tokens: 100 / f.slope, usd: g && g.slope > 0 ? 100 / g.slope : null, r2: f.r2 };
+      est.stepfit = { crossings: pts.length, output_tokens: 100 / f.slope, usd: g && g.slope > 0 ? 100 / g.slope : null, r2: f.r2, delta_fit: g && g.slope > 0 ? g.slope * tot.cost_usd : null };
       est.method = 'stepfit';
       est.output_tokens = est.stepfit.output_tokens;
       if (est.stepfit.usd) est.usd = est.stepfit.usd;
@@ -78,6 +78,62 @@ export function summarize(run) {
   };
 }
 
+const LIST = { // API list price per 1M tokens: output, input, cache read (used only to label the meter weights)
+  'claude-sonnet-5-5': { output: 10, input: 2, cache_read: 0.2 }, 'claude-opus-5-5': { output: 20, input: 4, cache_read: 0.2 },
+  'claude-haiku-5-5': { output: 0.5, input: 0.1, cache_read: 0.01 }, 'claude-fable-5-1': { output: 50, input: 10, cache_read: 0.25 },
+};
+function solve3(A, b) { // Gaussian elimination, 3x3
+  const M = A.map((r, i) => [...r, b[i]]);
+  for (let i = 0; i < 3; i++) { let p = i; for (let r = i + 1; r < 3; r++) if (Math.abs(M[r][i]) > Math.abs(M[p][i])) p = r; [M[i], M[p]] = [M[p], M[i]];
+    for (let r = 0; r < 3; r++) { if (r === i) continue; const f = M[r][i] / M[i][i]; for (let c = i; c < 4; c++) M[r][c] -= f * M[i][c]; } }
+  return M.map((r, i) => r[3] / r[i]);
+}
+const deltaOf = (r) => r.estimates.five_hour.stepfit?.delta_fit ?? r.estimates.five_hour.delta;
+
+/** Per model: meter weights (points per token of each kind) solved from the latest valid run of each mode. */
+export function weightsFor(runs, model) {
+  const latest = {};
+  for (const r of runs) if (r.valid && (r.model_reported ?? r.model) === model) latest[r.mode] = r;
+  const modes = ['output', 'input', 'cache'];
+  if (!modes.every((m) => latest[m])) return null;
+  const A = modes.map((m) => { const t = latest[m].totals; return [t.output, t.input + t.cache_write, t.cache_read]; });
+  const b = modes.map((m) => deltaOf(latest[m]));
+  const w = solve3(A, b);
+  const corners = [];
+  for (const d1 of [-1, 1]) for (const d2 of [-1, 1]) for (const d3 of [-1, 1]) corners.push(solve3(A, [b[0] + d1, b[1] + d2, b[2] + d3]));
+  const list = LIST[model] ?? null;
+  const rel = (i) => (list ? list.output * w[i] / w[0] : null);
+  return {
+    model, runs: Object.fromEntries(modes.map((m) => [m, latest[m].id])),
+    points_per_million: { output: w[0] * 1e6, input_or_cache_write: w[1] * 1e6, cache_read: w[2] * 1e6 },
+    implied_price_per_million: { output: rel(0), input_or_cache_write: rel(1), cache_read: rel(2) },
+    implied_price_range: { input_or_cache_write: [Math.min(...corners.map((c) => list.output * c[1] / c[0])), Math.max(...corners.map((c) => list.output * c[1] / c[0]))],
+      cache_read: [Math.min(...corners.map((c) => list.output * c[2] / c[0])), Math.max(...corners.map((c) => list.output * c[2] / c[0]))] },
+    list_price_per_million: list,
+    window: { output_equiv_tokens: 100 / w[0], usd_at_list: list ? 100 / w[0] * list.output / 1e6 : null, cache_read_equiv_tokens: 100 / w[2] },
+  };
+}
+
+/** Output-equivalent tokens a run spent, by that model's meter weights. */
+function outputEquiv(r, W) {
+  const t = r.totals, w = W.points_per_million;
+  return t.output + (t.input + t.cache_write) * (w.input_or_cache_write / w.output) + t.cache_read * (w.cache_read / w.output);
+}
+
+/** Weekly window, pooled across every valid run: cumulative output-equivalent spend vs the weekly meter. */
+export function weeklyFor(runs, weightsByModel, model) {
+  const W = weightsByModel[model]; if (!W) return null;
+  const rs = runs.filter((r) => r.valid && (r.model_reported ?? r.model) === model && r.estimates.seven_day);
+  if (!rs.length) return null;
+  const first = rs[0].estimates.seven_day.pre, last = rs.at(-1).estimates.seven_day.post;
+  const spent = rs.reduce((s, r) => s + outputEquiv(r, W), 0);
+  const delta = last - first;
+  if (delta <= 0) return { delta, spent_output_equiv: spent, output_equiv_tokens: null };
+  return { delta, spent_output_equiv: spent, output_equiv_tokens: spent * 100 / delta,
+    output_equiv_tokens_low: spent * 100 / (delta + 1), output_equiv_tokens_high: delta > 1 ? spent * 100 / (delta - 1) : null,
+    usd_at_list: W.list_price_per_million ? spent * 100 / delta * W.list_price_per_million.output / 1e6 : null, runs: rs.length };
+}
+
 export function rebuild(root) {
   const rawDir = path.join(root, 'data', 'raw');
   const runs = fs.existsSync(rawDir)
@@ -89,6 +145,14 @@ export function rebuild(root) {
   const byMode = {};
   for (const r of runs) if (r.valid) byMode[r.mode] = r;
   fs.writeFileSync(path.join(root, 'data', 'latest.json'), JSON.stringify({ generated_at: new Date().toISOString(), runs: runs.length, headline, latest_by_mode: byMode }, null, 1));
+  const models = [...new Set(runs.filter((r) => r.valid).map((r) => r.model_reported ?? r.model))];
+  const weights = {};
+  for (const m of models) { const w = weightsFor(runs, m); if (w) weights[m] = w; }
+  const weekly = {};
+  for (const m of Object.keys(weights)) weekly[m] = weeklyFor(runs, weights, m);
+  const plans = { pro: { label: 'Pro', multiplier: 1, measured: true }, max5: { label: 'Max 5x', multiplier: 5, measured: false }, max20: { label: 'Max 20x', multiplier: 20, measured: false } };
+  fs.writeFileSync(path.join(root, 'data', 'summary.json'), JSON.stringify({ generated_at: new Date().toISOString(), measured_plan: 'pro', plans, models: Object.keys(weights), weights, weekly,
+    runs_by_model: Object.fromEntries(models.map((m) => [m, runs.filter((r) => (r.model_reported ?? r.model) === m).map((r) => r.id)])) }, null, 1));
   return runs;
 }
 

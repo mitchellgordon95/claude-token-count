@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Method and Caveats</title>
+<meta name="description" content="How the Claude subscription meter is measured: the burn modes, how the meter is read, and how the per-token-kind weights are solved.">
+<style>
+  :root { color-scheme: light; --bg: #f7f7f5; --surface: #ffffff; --surface-2: #f0f0ed; --line: #e3e2dd; --ink: #121212; --ink-2: #55544f; --ink-3: #8c8b86; --accent: #2a78d6; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg: #121211; --surface: #1b1b1a; --surface-2: #232322; --line: #2e2e2c; --ink: #f0efec; --ink-2: #bdbcb3; --ink-3: #85847f; --accent: #3987e5; } }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #121211; --surface: #1b1b1a; --surface-2: #232322; --line: #2e2e2c; --ink: #f0efec; --ink-2: #bdbcb3; --ink-3: #85847f; --accent: #3987e5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 36px 16px 72px; }
+  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  header h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  header nav { font-size: 14px; color: var(--ink-2); }
+  h2 { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; margin: 36px 0 10px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 24px 0 6px; }
+  p, li { color: var(--ink-2); } p { margin: 0 0 12px; } li { margin: 4px 0; }
+  b { color: var(--ink); font-weight: 600; }
+  code { font-size: 13px; background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  pre code { border: 0; padding: 0; background: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 16px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--ink-2); font-weight: 500; font-size: 12px; }
+  .lede { font-size: 18px; color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Method and caveats</h1><nav><a href="./">← Back to the numbers</a></nav></header>
+
+  <p class="lede">A fresh Claude Pro account is driven through headless Claude Code in controlled bursts. Each burst spends mostly one kind of token, and the account's usage meter is read after every call. From how far the meter moves per token of each kind, the site solves what the subscription actually charges, and converts it all into one unit.</p>
+
+  <h2>The meter</h2>
+  <p>Paid Claude plans have two limits: a rolling five-hour window and a weekly cap. Both are reported as whole-percent utilization. Anthropic publishes no token or dollar figure for either, only a list of factors that affect usage: message length, conversation length, model, effort, tool use, and that cached content "counts less".</p>
+  <p>Claude Code's streamed JSON output includes a <code>rate_limit_event</code> on every call, carrying both windows' utilization as a fraction and their reset times. That is the same data the <code>/usage</code> command shows. The harness reads it from each burn call, so every call doubles as a meter read with no separate endpoint and no polling limit. The reading arrives in the response headers, before that call's own output is counted, so it is paired with the spend of the calls before it. A tiny probe call brackets each run at both ends.</p>
+
+  <h2>The three burn modes</h2>
+  <p>Every call runs <code>claude -p</code> with all tools disabled, a one-line system prompt, effort low, Sonnet 5.5 or Opus 5.5, and no session persistence. Each mode holds the token mix constant so that one run measures one weight.</p>
+  <table>
+    <thead><tr><th>Mode</th><th>Prompt</th><th>What dominates the spend</th></tr></thead>
+    <tbody>
+      <tr><td><b>output</b></td><td>"Write a 4000-word essay about <i>topic</i>." Fifteen rotating topics, continuous prose.</td><td>Output tokens, about 7K per call. Overhead is Claude Code's ~11K system prompt as a 1-hour cache write on the first call and a cache read after.</td></tr>
+      <tr><td><b>input</b></td><td>About 70K tokens of plain English (Unix manual pages, a different slice each call) followed by "reply with exactly OK".</td><td>Cache-write tokens. Claude Code puts a cache breakpoint on the user message, so the big prompt is billed as a 1-hour cache write rather than plain input. Plain input cannot be isolated through Claude Code.</td></tr>
+      <tr><td><b>cache</b></td><td>The same 70K-token prompt on every call, inside the cache window.</td><td>Cache-read tokens, about 80K per call, with one cache write on the first call.</td></tr>
+    </tbody>
+  </table>
+  <p>A partial run stops once the five-hour meter has risen a set number of points, typically 8 to 10. A full run keeps going until the account is rate-limited, which measures the window outright instead of extrapolating.</p>
+  <p>Two things learned the hard way: a 60K-token prompt of shuffled dictionary words is flagged by the model's safeguard classifier and refused, which is why the filler is real prose; and refused calls still charge the meter for their input.</p>
+
+  <h2>From meter movement to a window size</h2>
+  <p>The meter only reports whole percents, so a single before-and-after difference carries a ±1 point error. Two refinements shrink it:</p>
+  <ul>
+    <li><b>Step fit.</b> Every time the integer meter ticks up, the run has crossed a threshold at a known cumulative spend. A regression through those crossings gives percent-per-token far more precisely than one ratio. Runs so far fit with r² above 0.99.</li>
+    <li><b>Solving the weights.</b> With one run per mode, three equations in three unknowns give the meter's points per token of each kind: output, input-or-cache-write, and cache read. Plain input is negligible in every mode and is folded into cache write. The ±1-point ranges shown next to each weight come from re-solving at every corner of the rounding error.</li>
+  </ul>
+  <p>Pinning output to its API list price turns those weights into a "meter-implied price" per token kind, which is the easiest way to see how the subscription's weighting differs from the public price list.</p>
+
+  <h2>The units on the front page</h2>
+  <ul>
+    <li><b>Adjusted output tokens.</b> Every token kind converted into output tokens by the meter's own weights, then scaled to a full window: 100 points divided by the meter's points per output token. This is the headline because output tokens are the one kind people can picture, and because it is independent of what mix you happen to run.</li>
+    <li><b>API credits.</b> Adjusted output tokens priced at the model's list output rate. What the same usage would cost if it were all output and billed per token.</li>
+    <li><b>Cache reads (adjusted).</b> The same budget spent entirely on the cheapest token kind. A reminder that a long agent loop, which is almost all cache reads, goes a very long way.</li>
+  </ul>
+  <p><b>Window.</b> Five hours is measured directly. A day is shown as 4.8 windows, which assumes every window is used fully; the weekly cap usually binds before that. The week is a pooled estimate: the weekly meter moves slowly, so every run's adjusted spend is accumulated against it across runs, and the range stays wide until many runs have landed.</p>
+  <p><b>Plan.</b> Only Pro is measured. Max 5x and Max 20x are shown as straight multiples of Pro, marked as extrapolated. Anthropic describes those tiers as multiples of Pro's usage, and one informal comparison against a real Max account came out near 4x, but nothing on this site has verified them.</p>
+
+  <h2>Caveats</h2>
+  <ul>
+    <li>Three runs and three unknowns is an exact fit; the evidence for linearity is the within-run step fits, not the cross-run solve. More runs per mode will overdetermine the system and give real residuals.</li>
+    <li>The weights are per model. Sonnet and Opus are solved separately; other models are not measured.</li>
+    <li>Anthropic can change allowances at any time, and says so. Every run is dated, and the history chart exists to catch drift.</li>
+    <li>Thinking tokens count as output tokens. Burns run at effort low so there are almost none, but a thinking-heavy workload spends output tokens you do not see.</li>
+    <li>Everything is measured through Claude Code, with its system prompt and caching choices. A different client with different cache breakpoints would spend the same budget differently, but the meter weights should be the same.</li>
+  </ul>
+
+  <h2>Data and code</h2>
+  <p>Raw per-call records for every run are in <code>data/raw/</code>, run summaries in <a href="data/runs.json">runs.json</a>, solved weights and window sizes in <a href="data/summary.json">summary.json</a>. The harness, analyzer, and this site are at <a href="https://github.com/mitchellgordon95/claude-token-count">github.com/mitchellgordon95/claude-token-count</a>. Runs are scheduled from GitHub Actions and committed back to the repo, so the history is the git log.</p>
+</main>
+</body>
+</html>
