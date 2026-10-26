@@ -169,15 +169,7 @@ function render() {
   document.getElementById('hero-value').textContent = d.text;
   document.getElementById('hero-unit-name').textContent = unitLabel;
   const badge = plan.measured ? `<span class="badge measured">measured</span>` : `<span class="badge extrap">extrapolated ×${plan.multiplier} from Pro, unmeasured</span>`;
-  const unitExpl = {
-    tokens: `Every token kind converted to output tokens by the meter's own weights: one cache read counts as <b>1/${Math.round(w.output / w.cache_read)}</b> of an output token, one input or cache-write token as <b>1/${(w.output / w.input_or_cache_write).toFixed(1)}</b>.`,
-    usd: `Adjusted output tokens priced at ${modelName(state.model)}'s list output rate of $${list.output}/M: what the same usage would cost on the API if it were all output.`,
-    cache: `The same budget spent entirely on cache reads, the cheapest token kind, which is most of what a long agent session spends.`,
-  }[state.unit];
-  const windowNote = { '5h': '', day: ' A day is 4.8 five-hour windows, if every window were used fully; the weekly cap usually binds first.',
-    week: wk && wk.windows_per_week ? ` The weekly cap is about ${wk.windows_per_week.toFixed(1)} five-hour windows, pooled across ${wk.runs} runs; coarse until more runs land.` : ' No weekly meter movement recorded yet; showing 33.6 windows, which overstates the real cap.' }[state.window];
-  const range = d.lo && d.hi ? ` Likely range ${d.lo} to ${d.hi}.` : '';
-  document.getElementById('hero-sub').innerHTML = `${badge} ${unitExpl}${windowNote}${range} <a href="method.html">How this was measured →</a>`;
+  document.getElementById('hero-sub').innerHTML = `${badge} <a href="method.html">How this was measured →</a>`;
   drawDaily();
 }
 

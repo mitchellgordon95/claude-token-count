@@ -71,6 +71,7 @@
     <li><b>Cache reads (adjusted).</b> The same budget spent entirely on the cheapest token kind. A reminder that a long agent loop, which is almost all cache reads, goes a very long way.</li>
   </ul>
   <p><b>Window.</b> Five hours is measured directly. A day is shown as 4.8 windows, which assumes every window is used fully; the weekly cap usually binds before that. The week is a pooled estimate: the weekly meter moves slowly, so every run's adjusted spend is accumulated against it across runs, and the range stays wide until many runs have landed.</p>
+  <p><b>Ranges.</b> The five-hour figure carries the ±1-point rounding of the meter, which the step fit narrows to a few percent. The weekly figure is much coarser: the weekly meter has moved only a handful of points inside runs so far, and its range is shown in the weights section below. The day figure inherits the five-hour figure's precision but assumes every window is used in full.</p>
   <p><b>Plan.</b> Only Pro is measured. Max 5x and Max 20x are shown as straight multiples of Pro, marked as extrapolated. Anthropic describes those tiers as multiples of Pro's usage, and one informal comparison against a real Max account came out near 4x, but nothing on this site has verified them.</p>
 
   <h2>Caveats</h2>
