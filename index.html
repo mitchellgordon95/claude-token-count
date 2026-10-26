@@ -54,7 +54,7 @@
   .dot.hollow { fill: var(--surface); stroke: var(--accent); }
   .band { fill: var(--accent-soft); opacity: .6; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th { color: var(--ink-2); font-weight: 500; font-size: 12px; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .wrap { overflow-x: auto; }
@@ -169,16 +169,16 @@ function drawTable(runs) {
     const e = r.estimates.five_hour || {};
     const pill = !r.valid ? `<span class="pill invalid">${r.outcome}</span>` : `<span class="pill ${e.method}">${methodName[e.method] || e.method}</span>`;
     return `<tr>
-      <td>${fmtDate(r.started_at)}</td><td>${r.mode}</td><td>${r.model_reported || r.model}</td><td>${pill}</td>
-      <td class="num">${fmtTok(r.totals.output)}</td><td class="num">${fmtTok(r.totals.input + r.totals.cache_write)}</td><td class="num">${fmtTok(r.totals.cache_read)}</td>
+      <td>${fmtDate(r.started_at)}</td><td>${r.mode}</td><td>${(r.model_reported || r.model).replace(/^claude-/, '')}</td><td>${pill}</td>
+      <td class="num">${fmtTok(r.totals.output)}</td><td class="num" title="${fmtTok(r.totals.input + r.totals.cache_write)} fresh + cache write, ${fmtTok(r.totals.cache_read)} cache read">${fmtTok(r.totals.input + r.totals.cache_write + r.totals.cache_read)}</td>
       <td class="num">${fmtUsd(r.totals.cost_usd)}</td><td class="num">+${e.delta ?? '—'}%</td>
-      <td class="num"><b>${r.valid ? fmtTok(e.output_tokens) : '—'}</b></td><td class="num">${r.valid ? fmtUsd(e.usd) : '—'}</td>
+      <td class="num"><b>${r.valid && r.mode === 'output' ? fmtTok(e.output_tokens) : '—'}</b></td><td class="num">${r.valid ? fmtUsd(e.usd) : '—'}</td>
       <td class="num">${r.pct_per_usd ? r.pct_per_usd.toFixed(2) : '—'}</td>
       <td class="muted">${r.label || ''}${r.note ? ' · ' + r.note : ''}</td></tr>`;
   }).join('');
   document.getElementById('history').innerHTML = `<table><thead><tr>
-    <th>Date</th><th>Mode</th><th>Model</th><th>Method</th><th class="num">Output</th><th class="num">Input+cache write</th><th class="num">Cache read</th>
-    <th class="num">API $</th><th class="num">5h meter</th><th class="num">Est. tokens / 5h</th><th class="num">Est. $ / 5h</th><th class="num">% per $</th><th>Label</th>
+    <th>Date</th><th>Mode</th><th>Model</th><th>Method</th><th class="num">Output</th><th class="num" title="fresh input + cache write + cache read; hover a cell for the split">Input</th>
+    <th class="num">API $</th><th class="num">5h meter</th><th class="num">Tokens / 5h</th><th class="num">$ / 5h</th><th class="num">% per $</th><th>Label</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
 }
 main();
