@@ -87,6 +87,13 @@
     <li>Everything is measured through Claude Code, with its system prompt and caching choices. A different client with different cache breakpoints would spend the same budget differently, but the meter weights should be the same.</li>
   </ul>
 
+  <h2 id="todo">TODO</h2>
+  <ul>
+    <li><b>Peak, off-peak, and average as separate figures.</b> The first four Opus output runs put the US-morning rate at about 1.4x the evening rate per token. Once a week of twice-daily runs is in, split the headline into peak and off-peak, keep the day's average, and add a time-of-day chart.</li>
+    <li>Measure Max 5x and Max 20x directly instead of extrapolating from Pro.</li>
+    <li>Run the monthly full burn to confirm the extrapolated window against a measured one.</li>
+  </ul>
+
   <h2>Data and code</h2>
   <p>Raw per-call records for every run are in <code>data/raw/</code>, run summaries in <a href="data/runs.json">runs.json</a>, solved weights and window sizes in <a href="data/summary.json">summary.json</a>. The harness, analyzer, and this site are at <a href="https://github.com/mitchellgordon95/claude-token-count">github.com/mitchellgordon95/claude-token-count</a>. Runs are scheduled from GitHub Actions and committed back to the repo, so the history is the git log: a small Opus output burn twice daily, all three modes on both models every Sunday, and a full burn to the limit on the first of the month.</p>
 </main>
