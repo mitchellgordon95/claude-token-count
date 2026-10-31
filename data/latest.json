@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-10-31T03:10:09.842Z",
- "runs": 17,
+ "generated_at": "2026-10-31T17:10:25.378Z",
+ "runs": 18,
  "headline": {
-  "id": "2026-10-31T03-04-07-output-daily",
-  "started_at": "2026-10-31T03:04:07.297Z",
-  "ended_at": "2026-10-31T03:10:09.828Z",
+  "id": "2026-10-31T17-04-01-output-daily",
+  "started_at": "2026-10-31T17:04:01.724Z",
+  "ended_at": "2026-10-31T17:10:25.366Z",
   "mode": "output",
   "model": "opus",
   "effort": "low",
@@ -21,39 +21,39 @@
    "input": 3271,
    "cache_write": 0,
    "cache_read": 0,
-   "output": 56989,
-   "thinking": 1469,
-   "cost_usd": 1.1528639999999999,
-   "ms": 688471
+   "output": 63312,
+   "thinking": 1576,
+   "cost_usd": 1.2793240000000001,
+   "ms": 752540
   },
-  "pct_per_million_output": 157.92521363771957,
-  "pct_per_usd": 7.806645016237822,
+  "pct_per_million_output": 157.94794035885775,
+  "pct_per_usd": 7.81662815674528,
   "estimates": {
    "five_hour": {
     "pre": 0,
-    "post": 9,
-    "delta": 9,
+    "post": 10,
+    "delta": 10,
     "method": "stepfit",
-    "output_tokens": 620394.2109136287,
-    "usd": 12.531361847679095,
-    "output_tokens_low": 569890,
-    "output_tokens_high": 712362.5,
+    "output_tokens": 688202.1551033381,
+    "usd": 13.887139222653328,
+    "output_tokens_low": 575563.6363636364,
+    "output_tokens_high": 703466.6666666666,
     "stepfit": {
      "crossings": 3,
-     "output_tokens": 620394.2109136287,
-     "usd": 12.531361847679095,
-     "r2": 0.9998615757871614,
-     "delta_fit": 9.199830106362455
+     "output_tokens": 688202.1551033381,
+     "usd": 13.887139222653328,
+     "r2": 0.9990644874253436,
+     "delta_fit": 9.212293327578289
     }
    },
    "seven_day": {
-    "pre": 12,
-    "post": 13,
+    "pre": 13,
+    "post": 14,
     "delta": 1,
     "method": "simple",
-    "output_tokens": 5698900,
-    "usd": 115.28639999999999,
-    "output_tokens_low": 2849450,
+    "output_tokens": 6331200,
+    "usd": 127.93240000000002,
+    "output_tokens_low": 3165600,
     "output_tokens_high": null,
     "stepfit": null
    }
@@ -61,9 +61,9 @@
  },
  "latest_by_mode": {
   "output": {
-   "id": "2026-10-31T03-04-07-output-daily",
-   "started_at": "2026-10-31T03:04:07.297Z",
-   "ended_at": "2026-10-31T03:10:09.828Z",
+   "id": "2026-10-31T17-04-01-output-daily",
+   "started_at": "2026-10-31T17:04:01.724Z",
+   "ended_at": "2026-10-31T17:10:25.366Z",
    "mode": "output",
    "model": "opus",
    "effort": "low",
@@ -80,39 +80,39 @@
     "input": 3271,
     "cache_write": 0,
     "cache_read": 0,
-    "output": 56989,
-    "thinking": 1469,
-    "cost_usd": 1.1528639999999999,
-    "ms": 688471
+    "output": 63312,
+    "thinking": 1576,
+    "cost_usd": 1.2793240000000001,
+    "ms": 752540
    },
-   "pct_per_million_output": 157.92521363771957,
-   "pct_per_usd": 7.806645016237822,
+   "pct_per_million_output": 157.94794035885775,
+   "pct_per_usd": 7.81662815674528,
    "estimates": {
     "five_hour": {
      "pre": 0,
-     "post": 9,
-     "delta": 9,
+     "post": 10,
+     "delta": 10,
      "method": "stepfit",
-     "output_tokens": 620394.2109136287,
-     "usd": 12.531361847679095,
-     "output_tokens_low": 569890,
-     "output_tokens_high": 712362.5,
+     "output_tokens": 688202.1551033381,
+     "usd": 13.887139222653328,
+     "output_tokens_low": 575563.6363636364,
+     "output_tokens_high": 703466.6666666666,
      "stepfit": {
       "crossings": 3,
-      "output_tokens": 620394.2109136287,
-      "usd": 12.531361847679095,
-      "r2": 0.9998615757871614,
-      "delta_fit": 9.199830106362455
+      "output_tokens": 688202.1551033381,
+      "usd": 13.887139222653328,
+      "r2": 0.9990644874253436,
+      "delta_fit": 9.212293327578289
      }
     },
     "seven_day": {
-     "pre": 12,
-     "post": 13,
+     "pre": 13,
+     "post": 14,
      "delta": 1,
      "method": "simple",
-     "output_tokens": 5698900,
-     "usd": 115.28639999999999,
-     "output_tokens_low": 2849450,
+     "output_tokens": 6331200,
+     "usd": 127.93240000000002,
+     "output_tokens_low": 3165600,
      "output_tokens_high": null,
      "stepfit": null
     }
