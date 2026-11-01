@@ -119,7 +119,15 @@ const modelName = (id) => (id || '').replace(/^claude-/, '').replace(/-(\d)-(\d)
 const state = { plan: 'pro', window: '5h', unit: 'tokens', model: null };
 let S = null, RUNS = [];
 try { Object.assign(state, JSON.parse(localStorage.getItem('ctc-state') || '{}')); } catch {}
-const persist = () => { try { localStorage.setItem('ctc-state', JSON.stringify(state)); } catch {} };
+// URL params (?plan=max5&window=week&unit=usd&model=opus) override saved settings, so a view can be shared as a link.
+const params = new URLSearchParams(location.search);
+for (const k of Object.keys(state)) if (params.has(k)) state[k] = params.get(k);
+const syncUrl = () => {
+  const p = new URLSearchParams(location.search);
+  for (const [k, v] of Object.entries(state)) if (v != null) p.set(k, v);
+  history.replaceState(null, '', `${location.pathname}?${p}${location.hash}`);
+};
+const persist = () => { try { localStorage.setItem('ctc-state', JSON.stringify(state)); } catch {} syncUrl(); };
 
 function seg(el, options, key, onchange) {
   el.innerHTML = options.map((o) => `<button type="button" data-v="${o.value}" aria-pressed="${state[key] === o.value}">${o.label}${o.tag ? `<span class="tag">${o.tag}</span>` : ''}</button>`).join('');
@@ -139,7 +147,12 @@ async function main() {
     return;
   }
   const preferred = models.find((m) => m.includes('opus')) ?? models[0];
-  if (!models.includes(state.model)) state.model = preferred;
+  // Accept a full model id or a short name like "opus"; fall back to defaults for anything unknown.
+  if (!models.includes(state.model)) state.model = models.find((m) => state.model && m.includes(state.model)) ?? preferred;
+  if (!S.plans[state.plan]) state.plan = 'pro';
+  if (!['5h', 'day', 'week'].includes(state.window)) state.window = '5h';
+  if (!['tokens', 'usd', 'cache'].includes(state.unit)) state.unit = 'tokens';
+  persist();
   document.getElementById('controls').hidden = false;
   document.getElementById('hero-unit').hidden = false;
   seg(document.getElementById('seg-plan'), Object.entries(S.plans).map(([k, p]) => ({ value: k, label: p.label, tag: p.measured ? '' : `×${p.multiplier} est.` })), 'plan', render);
