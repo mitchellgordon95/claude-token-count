@@ -1,0 +1,401 @@
+{
+ "id": "2026-11-02T17-04-35-output-daily",
+ "version": 2,
+ "started_at": "2026-11-02T17:04:35.468Z",
+ "ended_at": "2026-11-02T17:08:54.253Z",
+ "mode": "output",
+ "model": "opus",
+ "effort": "low",
+ "meter": "stream",
+ "label": "daily",
+ "note": "",
+ "params": {
+  "targetPct": 5,
+  "untilLimit": false,
+  "maxCalls": 400,
+  "words": 4000,
+  "inputTokens": 60000,
+  "concurrency": 2
+ },
+ "runner": {
+  "host": "runnervm48cm3",
+  "ci": true,
+  "claude_version": "2.1.316 (Claude Code)"
+ },
+ "pre": {
+  "at": "2026-11-02T17:04:40.163Z",
+  "five_hour": {
+   "utilization": 0,
+   "resets_at": "2026-11-02T22:00:00.000Z"
+  },
+  "seven_day": {
+   "utilization": 1,
+   "resets_at": "2026-11-08T12:00:00.000Z"
+  }
+ },
+ "post": {
+  "at": "2026-11-02T17:08:54.253Z",
+  "five_hour": {
+   "utilization": 10,
+   "resets_at": "2026-11-02T22:00:00.000Z"
+  },
+  "seven_day": {
+   "utilization": 2,
+   "resets_at": "2026-11-08T12:00:00.000Z"
+  }
+ },
+ "samples": [
+  {
+   "at": "2026-11-02T17:04:40.163Z",
+   "calls": 0,
+   "ok": 0,
+   "input": 0,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 0,
+   "thinking": 0,
+   "cost_usd": 0,
+   "five_hour": 0,
+   "seven_day": 1,
+   "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+   "status": "allowed"
+  },
+  {
+   "at": "2026-11-02T17:06:54.320Z",
+   "calls": 1,
+   "ok": 1,
+   "input": 391,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 4,
+   "thinking": 0,
+   "cost_usd": 0.001644,
+   "five_hour": 1,
+   "seven_day": 2,
+   "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+   "status": "allowed"
+  },
+  {
+   "at": "2026-11-02T17:06:50.684Z",
+   "calls": 1,
+   "ok": 1,
+   "input": 391,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 4,
+   "thinking": 0,
+   "cost_usd": 0.001644,
+   "five_hour": 0,
+   "seven_day": 1,
+   "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+   "status": "allowed"
+  },
+  {
+   "at": "2026-11-02T17:08:52.080Z",
+   "calls": 3,
+   "ok": 3,
+   "input": 1219,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 23628,
+   "thinking": 283,
+   "cost_usd": 0.47743599999999997,
+   "five_hour": 6,
+   "seven_day": 2,
+   "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+   "status": "allowed"
+  },
+  {
+   "at": "2026-11-02T17:08:51.488Z",
+   "calls": 3,
+   "ok": 3,
+   "input": 1219,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 23628,
+   "thinking": 283,
+   "cost_usd": 0.47743599999999997,
+   "five_hour": 5,
+   "seven_day": 2,
+   "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+   "status": "allowed"
+  },
+  {
+   "at": "2026-11-02T17:08:54.253Z",
+   "calls": 6,
+   "ok": 6,
+   "input": 2440,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 43320,
+   "thinking": 735,
+   "cost_usd": 0.8761599999999999,
+   "five_hour": 10,
+   "seven_day": 2,
+   "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+   "status": "allowed"
+  }
+ ],
+ "calls": [
+  {
+   "ok": true,
+   "exit": 0,
+   "ms": 4683,
+   "input": 391,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 4,
+   "thinking": 0,
+   "cost_usd": 0.001644,
+   "stop_reason": "end_turn",
+   "model": "claude-opus-5-5",
+   "result_chars": 2,
+   "meter": {
+    "at": "2026-11-02T17:04:40.163Z",
+    "five_hour": 0,
+    "seven_day": 1,
+    "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+    "seven_day_resets_at": "2026-11-08T12:00:00.000Z",
+    "status": "allowed",
+    "raw": {
+     "status": "allowed",
+     "resetsAt": 1793656800,
+     "rateLimitType": "five_hour",
+     "overageStatus": "rejected",
+     "overageDisabledReason": "org_level_disabled",
+     "isUsingOverage": false,
+     "unifiedWindows": {
+      "five_hour": {
+       "utilization": 0,
+       "resetsAt": 1793656800,
+       "status": "allowed"
+      },
+      "seven_day": {
+       "utilization": 0.01,
+       "resetsAt": 1794139200,
+       "status": "allowed"
+      }
+     }
+    }
+   },
+   "error": null
+  },
+  {
+   "ok": true,
+   "exit": 0,
+   "ms": 134157,
+   "input": 414,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 12318,
+   "thinking": 263,
+   "cost_usd": 0.24801600000000001,
+   "stop_reason": "end_turn",
+   "model": "claude-opus-5-5",
+   "result_chars": 38394,
+   "meter": {
+    "at": "2026-11-02T17:06:54.320Z",
+    "five_hour": 1,
+    "seven_day": 2,
+    "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+    "seven_day_resets_at": "2026-11-08T12:00:00.000Z",
+    "status": "allowed",
+    "raw": {
+     "status": "allowed",
+     "resetsAt": 1793656800,
+     "rateLimitType": "five_hour",
+     "overageStatus": "rejected",
+     "overageDisabledReason": "org_level_disabled",
+     "isUsingOverage": false,
+     "unifiedWindows": {
+      "five_hour": {
+       "utilization": 0.01,
+       "resetsAt": 1793656800,
+       "status": "allowed"
+      },
+      "seven_day": {
+       "utilization": 0.02,
+       "resetsAt": 1794139200,
+       "status": "allowed"
+      }
+     }
+    }
+   },
+   "error": null
+  },
+  {
+   "ok": true,
+   "exit": 0,
+   "ms": 130519,
+   "input": 414,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 11306,
+   "thinking": 20,
+   "cost_usd": 0.22777599999999998,
+   "stop_reason": "end_turn",
+   "model": "claude-opus-5-5",
+   "result_chars": 37519,
+   "meter": {
+    "at": "2026-11-02T17:06:50.684Z",
+    "five_hour": 0,
+    "seven_day": 1,
+    "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+    "seven_day_resets_at": "2026-11-08T12:00:00.000Z",
+    "status": "allowed",
+    "raw": {
+     "status": "allowed",
+     "resetsAt": 1793656800,
+     "rateLimitType": "five_hour",
+     "overageStatus": "rejected",
+     "overageDisabledReason": "org_level_disabled",
+     "isUsingOverage": false,
+     "unifiedWindows": {
+      "five_hour": {
+       "utilization": 0,
+       "resetsAt": 1793656800,
+       "status": "allowed"
+      },
+      "seven_day": {
+       "utilization": 0.01,
+       "resetsAt": 1794139200,
+       "status": "allowed"
+      }
+     }
+    }
+   },
+   "error": null
+  },
+  {
+   "ok": true,
+   "exit": 0,
+   "ms": 117759,
+   "input": 415,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 10306,
+   "thinking": 65,
+   "cost_usd": 0.20777999999999996,
+   "stop_reason": "end_turn",
+   "model": "claude-opus-5-5",
+   "result_chars": 33378,
+   "meter": {
+    "at": "2026-11-02T17:08:52.080Z",
+    "five_hour": 6,
+    "seven_day": 2,
+    "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+    "seven_day_resets_at": "2026-11-08T12:00:00.000Z",
+    "status": "allowed",
+    "raw": {
+     "status": "allowed",
+     "resetsAt": 1793656800,
+     "rateLimitType": "five_hour",
+     "overageStatus": "rejected",
+     "overageDisabledReason": "org_level_disabled",
+     "isUsingOverage": false,
+     "unifiedWindows": {
+      "five_hour": {
+       "utilization": 0.06,
+       "resetsAt": 1793656800,
+       "status": "allowed"
+      },
+      "seven_day": {
+       "utilization": 0.02,
+       "resetsAt": 1794139200,
+       "status": "allowed"
+      }
+     }
+    }
+   },
+   "error": null
+  },
+  {
+   "ok": true,
+   "exit": 0,
+   "ms": 117165,
+   "input": 415,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 9382,
+   "thinking": 387,
+   "cost_usd": 0.1893,
+   "stop_reason": "end_turn",
+   "model": "claude-opus-5-5",
+   "result_chars": 31357,
+   "meter": {
+    "at": "2026-11-02T17:08:51.488Z",
+    "five_hour": 5,
+    "seven_day": 2,
+    "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+    "seven_day_resets_at": "2026-11-08T12:00:00.000Z",
+    "status": "allowed",
+    "raw": {
+     "status": "allowed",
+     "resetsAt": 1793656800,
+     "rateLimitType": "five_hour",
+     "overageStatus": "rejected",
+     "overageDisabledReason": "org_level_disabled",
+     "isUsingOverage": false,
+     "unifiedWindows": {
+      "five_hour": {
+       "utilization": 0.05,
+       "resetsAt": 1793656800,
+       "status": "allowed"
+      },
+      "seven_day": {
+       "utilization": 0.02,
+       "resetsAt": 1794139200,
+       "status": "allowed"
+      }
+     }
+    }
+   },
+   "error": null
+  },
+  {
+   "ok": true,
+   "exit": 0,
+   "ms": 2172,
+   "input": 391,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 4,
+   "thinking": 0,
+   "cost_usd": 0.001644,
+   "stop_reason": "end_turn",
+   "model": "claude-opus-5-5",
+   "result_chars": 2,
+   "meter": {
+    "at": "2026-11-02T17:08:54.253Z",
+    "five_hour": 10,
+    "seven_day": 2,
+    "five_hour_resets_at": "2026-11-02T22:00:00.000Z",
+    "seven_day_resets_at": "2026-11-08T12:00:00.000Z",
+    "status": "allowed",
+    "raw": {
+     "status": "allowed",
+     "resetsAt": 1793656800,
+     "rateLimitType": "five_hour",
+     "overageStatus": "rejected",
+     "overageDisabledReason": "org_level_disabled",
+     "isUsingOverage": false,
+     "unifiedWindows": {
+      "five_hour": {
+       "utilization": 0.1,
+       "resetsAt": 1793656800,
+       "status": "allowed"
+      },
+      "seven_day": {
+       "utilization": 0.02,
+       "resetsAt": 1794139200,
+       "status": "allowed"
+      }
+     }
+    }
+   },
+   "error": null
+  }
+ ],
+ "outcome": "target_reached",
+ "error": null
+}
