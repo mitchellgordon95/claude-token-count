@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-01T17:10:04.508Z",
- "runs": 21,
+ "generated_at": "2026-11-02T03:10:46.420Z",
+ "runs": 22,
  "headline": {
-  "id": "2026-11-01T17-03-48-output-daily",
-  "started_at": "2026-11-01T17:03:48.863Z",
-  "ended_at": "2026-11-01T17:10:04.493Z",
+  "id": "2026-11-02T03-04-46-output-daily",
+  "started_at": "2026-11-02T03:04:46.688Z",
+  "ended_at": "2026-11-02T03:10:46.405Z",
   "mode": "output",
   "model": "opus",
   "effort": "low",
@@ -18,42 +18,42 @@
   "totals": {
    "calls": 8,
    "ok": 8,
-   "input": 3279,
+   "input": 3271,
    "cache_write": 0,
    "cache_read": 0,
-   "output": 59797,
-   "thinking": 1280,
-   "cost_usd": 1.2090560000000001,
-   "ms": 708861
+   "output": 58147,
+   "thinking": 1193,
+   "cost_usd": 1.176024,
+   "ms": 696654
   },
-  "pct_per_million_output": 150.50922287071256,
-  "pct_per_usd": 7.44382394198449,
+  "pct_per_million_output": 154.78012623179185,
+  "pct_per_usd": 7.65290504275423,
   "estimates": {
    "five_hour": {
     "pre": 0,
     "post": 9,
     "delta": 9,
     "method": "stepfit",
-    "output_tokens": 788975.2055621297,
-    "usd": 15.926950620289388,
-    "output_tokens_low": 597970,
-    "output_tokens_high": 747462.5,
+    "output_tokens": 640713.9308357432,
+    "usd": 12.937856928566825,
+    "output_tokens_low": 581470,
+    "output_tokens_high": 726837.5,
     "stepfit": {
      "crossings": 3,
-     "output_tokens": 788975.2055621297,
-     "usd": 15.926950620289388,
-     "r2": 0.9836977796301862,
-     "delta_fit": 7.5912585454982215
+     "output_tokens": 640713.9308357432,
+     "usd": 12.937856928566825,
+     "r2": 0.999965250998917,
+     "delta_fit": 9.089789804394385
     }
    },
    "seven_day": {
-    "pre": 0,
+    "pre": 1,
     "post": 1,
-    "delta": 1,
-    "method": "simple",
-    "output_tokens": 5979700,
-    "usd": 120.9056,
-    "output_tokens_low": 2989850,
+    "delta": 0,
+    "method": null,
+    "output_tokens": null,
+    "usd": null,
+    "output_tokens_low": null,
     "output_tokens_high": null,
     "stepfit": null
    }
@@ -61,9 +61,9 @@
  },
  "latest_by_mode": {
   "output": {
-   "id": "2026-11-01T17-03-48-output-daily",
-   "started_at": "2026-11-01T17:03:48.863Z",
-   "ended_at": "2026-11-01T17:10:04.493Z",
+   "id": "2026-11-02T03-04-46-output-daily",
+   "started_at": "2026-11-02T03:04:46.688Z",
+   "ended_at": "2026-11-02T03:10:46.405Z",
    "mode": "output",
    "model": "opus",
    "effort": "low",
@@ -77,42 +77,42 @@
    "totals": {
     "calls": 8,
     "ok": 8,
-    "input": 3279,
+    "input": 3271,
     "cache_write": 0,
     "cache_read": 0,
-    "output": 59797,
-    "thinking": 1280,
-    "cost_usd": 1.2090560000000001,
-    "ms": 708861
+    "output": 58147,
+    "thinking": 1193,
+    "cost_usd": 1.176024,
+    "ms": 696654
    },
-   "pct_per_million_output": 150.50922287071256,
-   "pct_per_usd": 7.44382394198449,
+   "pct_per_million_output": 154.78012623179185,
+   "pct_per_usd": 7.65290504275423,
    "estimates": {
     "five_hour": {
      "pre": 0,
      "post": 9,
      "delta": 9,
      "method": "stepfit",
-     "output_tokens": 788975.2055621297,
-     "usd": 15.926950620289388,
-     "output_tokens_low": 597970,
-     "output_tokens_high": 747462.5,
+     "output_tokens": 640713.9308357432,
+     "usd": 12.937856928566825,
+     "output_tokens_low": 581470,
+     "output_tokens_high": 726837.5,
      "stepfit": {
       "crossings": 3,
-      "output_tokens": 788975.2055621297,
-      "usd": 15.926950620289388,
-      "r2": 0.9836977796301862,
-      "delta_fit": 7.5912585454982215
+      "output_tokens": 640713.9308357432,
+      "usd": 12.937856928566825,
+      "r2": 0.999965250998917,
+      "delta_fit": 9.089789804394385
      }
     },
     "seven_day": {
-     "pre": 0,
+     "pre": 1,
      "post": 1,
-     "delta": 1,
-     "method": "simple",
-     "output_tokens": 5979700,
-     "usd": 120.9056,
-     "output_tokens_low": 2989850,
+     "delta": 0,
+     "method": null,
+     "output_tokens": null,
+     "usd": null,
+     "output_tokens_low": null,
      "output_tokens_high": null,
      "stepfit": null
     }
