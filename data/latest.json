@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-08T17:10:16.296Z",
- "runs": 35,
+ "generated_at": "2026-11-09T03:11:19.124Z",
+ "runs": 36,
  "headline": {
-  "id": "2026-11-08T17-03-48-output-daily",
-  "started_at": "2026-11-08T17:03:48.049Z",
-  "ended_at": "2026-11-08T17:10:16.286Z",
+  "id": "2026-11-09T03-05-05-output-daily",
+  "started_at": "2026-11-09T03:05:05.366Z",
+  "ended_at": "2026-11-09T03:11:19.112Z",
   "mode": "output",
   "model": "opus",
   "effort": "low",
@@ -18,42 +18,42 @@
   "totals": {
    "calls": 8,
    "ok": 8,
-   "input": 3279,
+   "input": 3271,
    "cache_write": 0,
    "cache_read": 0,
-   "output": 62560,
-   "thinking": 1322,
-   "cost_usd": 1.2643160000000002,
-   "ms": 737844
+   "output": 59711,
+   "thinking": 1177,
+   "cost_usd": 1.207304,
+   "ms": 713374
   },
-  "pct_per_million_output": 159.846547314578,
-  "pct_per_usd": 7.909415051300464,
+  "pct_per_million_output": 150.72599688499605,
+  "pct_per_usd": 7.4546261753460605,
   "estimates": {
    "five_hour": {
     "pre": 0,
-    "post": 10,
-    "delta": 10,
+    "post": 9,
+    "delta": 9,
     "method": "stepfit",
-    "output_tokens": 728365.9641694333,
-    "usd": 14.693568495969725,
-    "output_tokens_low": 568727.2727272727,
-    "output_tokens_high": 695111.1111111111,
+    "output_tokens": 775404.8980487647,
+    "usd": 15.65502934998153,
+    "output_tokens_low": 597110,
+    "output_tokens_high": 746387.5,
     "stepfit": {
-     "crossings": 4,
-     "output_tokens": 728365.9641694333,
-     "usd": 14.693568495969725,
-     "r2": 0.9130794582890392,
-     "delta_fit": 8.604553756609821
+     "crossings": 3,
+     "output_tokens": 775404.8980487647,
+     "usd": 15.65502934998153,
+     "r2": 0.9819301154385385,
+     "delta_fit": 7.711924219429357
     }
    },
    "seven_day": {
-    "pre": 0,
-    "post": 1,
+    "pre": 1,
+    "post": 2,
     "delta": 1,
     "method": "simple",
-    "output_tokens": 6256000,
-    "usd": 126.43160000000002,
-    "output_tokens_low": 3128000,
+    "output_tokens": 5971100,
+    "usd": 120.73039999999999,
+    "output_tokens_low": 2985550,
     "output_tokens_high": null,
     "stepfit": null
    }
@@ -61,9 +61,9 @@
  },
  "latest_by_mode": {
   "output": {
-   "id": "2026-11-08T17-03-48-output-daily",
-   "started_at": "2026-11-08T17:03:48.049Z",
-   "ended_at": "2026-11-08T17:10:16.286Z",
+   "id": "2026-11-09T03-05-05-output-daily",
+   "started_at": "2026-11-09T03:05:05.366Z",
+   "ended_at": "2026-11-09T03:11:19.112Z",
    "mode": "output",
    "model": "opus",
    "effort": "low",
@@ -77,42 +77,42 @@
    "totals": {
     "calls": 8,
     "ok": 8,
-    "input": 3279,
+    "input": 3271,
     "cache_write": 0,
     "cache_read": 0,
-    "output": 62560,
-    "thinking": 1322,
-    "cost_usd": 1.2643160000000002,
-    "ms": 737844
+    "output": 59711,
+    "thinking": 1177,
+    "cost_usd": 1.207304,
+    "ms": 713374
    },
-   "pct_per_million_output": 159.846547314578,
-   "pct_per_usd": 7.909415051300464,
+   "pct_per_million_output": 150.72599688499605,
+   "pct_per_usd": 7.4546261753460605,
    "estimates": {
     "five_hour": {
      "pre": 0,
-     "post": 10,
-     "delta": 10,
+     "post": 9,
+     "delta": 9,
      "method": "stepfit",
-     "output_tokens": 728365.9641694333,
-     "usd": 14.693568495969725,
-     "output_tokens_low": 568727.2727272727,
-     "output_tokens_high": 695111.1111111111,
+     "output_tokens": 775404.8980487647,
+     "usd": 15.65502934998153,
+     "output_tokens_low": 597110,
+     "output_tokens_high": 746387.5,
      "stepfit": {
-      "crossings": 4,
-      "output_tokens": 728365.9641694333,
-      "usd": 14.693568495969725,
-      "r2": 0.9130794582890392,
-      "delta_fit": 8.604553756609821
+      "crossings": 3,
+      "output_tokens": 775404.8980487647,
+      "usd": 15.65502934998153,
+      "r2": 0.9819301154385385,
+      "delta_fit": 7.711924219429357
      }
     },
     "seven_day": {
-     "pre": 0,
-     "post": 1,
+     "pre": 1,
+     "post": 2,
      "delta": 1,
      "method": "simple",
-     "output_tokens": 6256000,
-     "usd": 126.43160000000002,
-     "output_tokens_low": 3128000,
+     "output_tokens": 5971100,
+     "usd": 120.73039999999999,
+     "output_tokens_low": 2985550,
      "output_tokens_high": null,
      "stepfit": null
     }
