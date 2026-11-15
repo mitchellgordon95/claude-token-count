@@ -2730,5 +2730,63 @@
     "stepfit": null
    }
   }
+ },
+ {
+  "id": "2026-11-15T03-04-19-output-daily",
+  "started_at": "2026-11-15T03:04:19.017Z",
+  "ended_at": "2026-11-15T03:10:32.404Z",
+  "mode": "output",
+  "model": "opus",
+  "effort": "low",
+  "label": "daily",
+  "note": null,
+  "outcome": "target_reached",
+  "valid": true,
+  "ci": true,
+  "claude_version": "2.1.325 (Claude Code)",
+  "model_reported": "claude-opus-5-5",
+  "totals": {
+   "calls": 8,
+   "ok": 8,
+   "input": 3271,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 60850,
+   "thinking": 1516,
+   "cost_usd": 1.230084,
+   "ms": 715833
+  },
+  "pct_per_million_output": 147.90468364831554,
+  "pct_per_usd": 7.3165735022974046,
+  "estimates": {
+   "five_hour": {
+    "pre": 0,
+    "post": 9,
+    "delta": 9,
+    "method": "stepfit",
+    "output_tokens": 669946.4221733154,
+    "usd": 13.519186565844432,
+    "output_tokens_low": 608500,
+    "output_tokens_high": 760625,
+    "stepfit": {
+     "crossings": 5,
+     "output_tokens": 669946.4221733154,
+     "usd": 13.519186565844432,
+     "r2": 0.9852241113249772,
+     "delta_fit": 9.09880186954256
+    }
+   },
+   "seven_day": {
+    "pre": 9,
+    "post": 10,
+    "delta": 1,
+    "method": "simple",
+    "output_tokens": 6085000,
+    "usd": 123.0084,
+    "output_tokens_low": 3042500,
+    "output_tokens_high": null,
+    "stepfit": null
+   }
+  }
  }
 ]
