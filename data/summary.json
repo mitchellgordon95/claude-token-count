@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-24T03:10:33.261Z",
+ "generated_at": "2026-11-24T17:08:32.208Z",
  "measured_plan": "pro",
  "plans": {
   "pro": {
@@ -118,31 +118,31 @@
  },
  "weekly": {
   "claude-sonnet-5-5": {
-   "windows_per_week": 14.286713356599762,
-   "output_equiv_tokens": 13968113.539494632,
-   "output_equiv_tokens_low": 12080723.83903133,
-   "output_equiv_tokens_high": 16554438.413276087,
-   "usd_at_list": 139.6811353949463,
-   "runs": 66,
+   "windows_per_week": 14.42339089961129,
+   "output_equiv_tokens": 14101743.114851251,
+   "output_equiv_tokens_low": 12183872.12502919,
+   "output_equiv_tokens_high": 16736198.699815547,
+   "usd_at_list": 141.01743114851251,
+   "runs": 67,
    "weekly_points_moved": 52
   },
   "claude-opus-5-5": {
-   "windows_per_week": 14.286713356599762,
-   "output_equiv_tokens": 7949493.933460663,
-   "output_equiv_tokens_low": 6875347.9558033245,
-   "output_equiv_tokens_high": 9421415.953277517,
-   "usd_at_list": 158.98987866921325,
-   "runs": 66,
+   "windows_per_week": 14.42339089961129,
+   "output_equiv_tokens": 8025544.825775132,
+   "output_equiv_tokens_low": 6934051.421483811,
+   "output_equiv_tokens_high": 9524858.862092948,
+   "usd_at_list": 160.51089651550262,
+   "runs": 67,
    "weekly_points_moved": 52
   }
  },
  "weekly_pooled": {
-  "runs": 66,
-  "points_5h_spent": 742.9090945431876,
+  "runs": 67,
+  "points_5h_spent": 750.016326779787,
   "weekly_points_moved": 52,
-  "windows_per_week": 14.286713356599762,
-  "windows_per_week_low": 12.356274033746615,
-  "windows_per_week_high": 16.932029920950697
+  "windows_per_week": 14.42339089961129,
+  "windows_per_week_low": 12.461775037236405,
+  "windows_per_week_high": 17.11793599237977
  },
  "model_ratios": {
   "claude-sonnet-5-5/claude-opus-5-5": {
@@ -982,18 +982,19 @@
     "model": "claude-opus-5-5",
     "source": "output run this day; input and cache weights carried",
     "runs": [
-     "2026-11-24T03-04-15-output-daily"
+     "2026-11-24T03-04-15-output-daily",
+     "2026-11-24T17-04-30-output-daily"
     ],
     "modes": [
      "output"
     ],
     "window": {
-     "output_equiv_tokens": 807642.3735097648,
-     "usd_at_list": 16.152847470195294,
+     "output_equiv_tokens": 571149.7773837454,
+     "usd_at_list": 11.42299554767491,
      "cache_read_equiv_tokens": 187753524.73139182
     },
     "points_per_million": {
-     "output": 123.81717859283538,
+     "output": 175.08542235290372,
      "input_or_cache_write": 35.975533543419836,
      "cache_read": 0.5326131700753115
     },
@@ -1074,7 +1075,8 @@
    "2026-11-22T17-03-34-output-daily",
    "2026-11-23T03-05-08-output-daily",
    "2026-11-23T17-04-32-output-daily",
-   "2026-11-24T03-04-15-output-daily"
+   "2026-11-24T03-04-15-output-daily",
+   "2026-11-24T17-04-30-output-daily"
   ]
  }
 }
