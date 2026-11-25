@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-25T03:10:26.921Z",
- "runs": 68,
+ "generated_at": "2026-11-25T17:08:27.439Z",
+ "runs": 69,
  "headline": {
-  "id": "2026-11-25T03-04-28-output-daily",
-  "started_at": "2026-11-25T03:04:28.232Z",
-  "ended_at": "2026-11-25T03:10:26.909Z",
+  "id": "2026-11-25T17-04-13-output-daily",
+  "started_at": "2026-11-25T17:04:13.422Z",
+  "ended_at": "2026-11-25T17:08:27.426Z",
   "mode": "output",
   "model": "opus",
   "effort": "low",
@@ -16,44 +16,44 @@
   "claude_version": "2.1.332 (Claude Code)",
   "model_reported": "claude-opus-5-5",
   "totals": {
-   "calls": 8,
-   "ok": 8,
-   "input": 3503,
+   "calls": 6,
+   "ok": 6,
+   "input": 2620,
    "cache_write": 0,
    "cache_read": 0,
-   "output": 59008,
-   "thinking": 1700,
-   "cost_usd": 1.194172,
-   "ms": 688069
+   "output": 41035,
+   "thinking": 581,
+   "cost_usd": 0.8311799999999999,
+   "ms": 481847
   },
-  "pct_per_million_output": 152.52169197396964,
-  "pct_per_usd": 7.536602767440536,
+  "pct_per_million_output": 219.324966492019,
+  "pct_per_usd": 10.827979499025483,
   "estimates": {
    "five_hour": {
     "pre": 0,
     "post": 9,
     "delta": 9,
     "method": "stepfit",
-    "output_tokens": 783576.949537563,
-    "usd": 15.828921306449985,
-    "output_tokens_low": 590080,
-    "output_tokens_high": 737600,
+    "output_tokens": 422777.96341397346,
+    "usd": 8.539715905617033,
+    "output_tokens_low": 410350,
+    "output_tokens_high": 512937.5,
     "stepfit": {
      "crossings": 3,
-     "output_tokens": 783576.949537563,
-     "usd": 15.828921306449985,
-     "r2": 0.9831516872141857,
-     "delta_fit": 7.54424118283662
+     "output_tokens": 422777.96341397346,
+     "usd": 8.539715905617033,
+     "r2": 0.9132223993056118,
+     "delta_fit": 9.733110670031632
     }
    },
    "seven_day": {
-    "pre": 3,
-    "post": 4,
+    "pre": 4,
+    "post": 5,
     "delta": 1,
     "method": "simple",
-    "output_tokens": 5900800,
-    "usd": 119.41720000000001,
-    "output_tokens_low": 2950400,
+    "output_tokens": 4103500,
+    "usd": 83.118,
+    "output_tokens_low": 2051750,
     "output_tokens_high": null,
     "stepfit": null
    }
@@ -61,9 +61,9 @@
  },
  "latest_by_mode": {
   "output": {
-   "id": "2026-11-25T03-04-28-output-daily",
-   "started_at": "2026-11-25T03:04:28.232Z",
-   "ended_at": "2026-11-25T03:10:26.909Z",
+   "id": "2026-11-25T17-04-13-output-daily",
+   "started_at": "2026-11-25T17:04:13.422Z",
+   "ended_at": "2026-11-25T17:08:27.426Z",
    "mode": "output",
    "model": "opus",
    "effort": "low",
@@ -75,44 +75,44 @@
    "claude_version": "2.1.332 (Claude Code)",
    "model_reported": "claude-opus-5-5",
    "totals": {
-    "calls": 8,
-    "ok": 8,
-    "input": 3503,
+    "calls": 6,
+    "ok": 6,
+    "input": 2620,
     "cache_write": 0,
     "cache_read": 0,
-    "output": 59008,
-    "thinking": 1700,
-    "cost_usd": 1.194172,
-    "ms": 688069
+    "output": 41035,
+    "thinking": 581,
+    "cost_usd": 0.8311799999999999,
+    "ms": 481847
    },
-   "pct_per_million_output": 152.52169197396964,
-   "pct_per_usd": 7.536602767440536,
+   "pct_per_million_output": 219.324966492019,
+   "pct_per_usd": 10.827979499025483,
    "estimates": {
     "five_hour": {
      "pre": 0,
      "post": 9,
      "delta": 9,
      "method": "stepfit",
-     "output_tokens": 783576.949537563,
-     "usd": 15.828921306449985,
-     "output_tokens_low": 590080,
-     "output_tokens_high": 737600,
+     "output_tokens": 422777.96341397346,
+     "usd": 8.539715905617033,
+     "output_tokens_low": 410350,
+     "output_tokens_high": 512937.5,
      "stepfit": {
       "crossings": 3,
-      "output_tokens": 783576.949537563,
-      "usd": 15.828921306449985,
-      "r2": 0.9831516872141857,
-      "delta_fit": 7.54424118283662
+      "output_tokens": 422777.96341397346,
+      "usd": 8.539715905617033,
+      "r2": 0.9132223993056118,
+      "delta_fit": 9.733110670031632
      }
     },
     "seven_day": {
-     "pre": 3,
-     "post": 4,
+     "pre": 4,
+     "post": 5,
      "delta": 1,
      "method": "simple",
-     "output_tokens": 5900800,
-     "usd": 119.41720000000001,
-     "output_tokens_low": 2950400,
+     "output_tokens": 4103500,
+     "usd": 83.118,
+     "output_tokens_low": 2051750,
      "output_tokens_high": null,
      "stepfit": null
     }
